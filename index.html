@@ -182,7 +182,8 @@
 
     <script>
         
-        const fechaInicio = new Date(2026, 4, 23); 
+        // Cambia la línea vieja por esta (formato de texto universal):
+const fechaInicio = new Date("2026-05-23T00:00:00");
 
         function controlarMusica() {
             const musica = document.getElementById('musica-fondo');
@@ -202,6 +203,19 @@
                 btnMusica.style.transform = "scale(1)";
             }
         }
+
+        // 💡 AGREGA ESTA FUNCIÓN AQUÍ ABAJO PARA QUE CALCULE LOS DÍAS AL CARGAR
+        function actualizarContador() {
+            const hoy = new Date();
+            const diferenciaMili = hoy - fechaInicio;
+            const diasPasados = Math.floor(diferenciaMili / (1000 * 60 * 60 * 24));
+            document.getElementById('dias').innerText = diasPasados;
+        }
+
+        // 🚀 Y EJECÚTALA AQUÍ PARA QUE ARRANQUE DE INMEDIATO
+        actualizarContador();
+
+    </script>
     </script>
 </body>
 </html>
