@@ -101,6 +101,31 @@
     </style>
 </head>
 <body>
+    <!-- Reproductor de Música Oculto -->
+    <audio id="musica-fondo" loop>
+        <source src="assets/music/canción.mp3" type="audio/mpeg">
+        Tu navegador no soporta el elemento de audio.
+    </audio>
+    <!-- Botón Flotante de Música -->
+    <button id="btn-musica" onclick="controlarMusica()" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #ff6b6b;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s;
+    ">🎵</button>
 
     <div class="container">
         <h1>Un pequeño detalle... ✨</h1>
@@ -159,14 +184,24 @@
         
         const fechaInicio = new Date(2026, 4, 23); 
 
-        function actualizarContador() {
-            const hoy = new Date();
-            const diferenciaMili = hoy - fechaInicio;
-            const diasPasados = Math.floor(diferenciaMili / (1000 * 60 * 60 * 24));
-            document.getElementById('dias').innerText = diasPasados;
-        }
+        function controlarMusica() {
+            const musica = document.getElementById('musica-fondo');
+            const btnMusica = document.getElementById('btn-musica');
 
-        actualizarContador();
+            if (musica.paused) {
+                musica.play().then(() => {
+                    btnMusica.innerText = "❤️";
+                    btnMusica.style.transform = "scale(1.1)";
+                }).catch(error => {
+                    console.log("El navegador bloqueó el audio o no encuentra el archivo:", error);
+                    alert("¡Haz clic de nuevo para reproducir!");
+                });
+            } else {
+                musica.pause();
+                btnMusica.innerText = "🎵";
+                btnMusica.style.transform = "scale(1)";
+            }
+        }
     </script>
 </body>
 </html>
