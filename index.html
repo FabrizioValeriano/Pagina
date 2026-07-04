@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para Alguien Especial ✨</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #fff5f5;
+            color: #4a4a4a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 400px;
+            width: 100%;
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            margin-top: 20px;
+        }
+
+        h1 {
+            color: #ff6b6b;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        p.subtitle {
+            font-style: italic;
+            color: #888;
+            margin-bottom: 25px;
+        }
+
+        .counter-box {
+            background: #fff0f0;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            border: 1px dashed #ffb3b3;
+        }
+
+        .counter-box h3 {
+            font-size: 2.5rem;
+            color: #ff4757;
+        }
+
+        .gallery {
+            margin-top: 20px;
+        }
+
+        .photo-card {
+            background: #fcfcfc;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            margin-bottom: 20px;
+            transform: rotate(-2deg);
+            transition: transform 0.3s;
+        }
+
+        .photo-card:nth-child(even) {
+            transform: rotate(2deg);
+        }
+
+        .photo-card:hover {
+            transform: rotate(0deg) scale(1.02);
+        }
+
+        .photo-card img {
+            width: 100%;
+            border-radius: 8px;
+            display: block;
+        }
+
+        .photo-card p {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .footer-note {
+            margin-top: 20px;
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Un pequeño detalle... ✨</h1>
+        <p class="subtitle">De los mejores días y contando.</p>
+
+        <!-- Contador Automático -->
+        <div class="counter-box">
+            <h3 id="dias">0</h3>
+            <p>Días desde nuestro primer beso.... Y aún no te aburres de mí XD (Mentira mi amor, no me dejes)</p>
+        </div>
+
+        <!-- Galería de fotos -->
+        <div class="gallery">
+            <div class="photo-card">
+                <!-- Puedes cambiar 'foto1.jpeg' por el nombre real de tu foto más adelante -->
+                <img src="assets/img/foto1.jpeg" <p> Una caminata juntos por la noche
+                <p> Agarrados de las manos.</p>
+            </div>
+
+            <div class="photo-card">
+                <!-- Puedes cambiar 'foto2.jpeg' por el nombre real de tu foto más adelante -->
+                <img src="assets/img/foto2.jpeg" <p> Sentados
+                <p> 3 horas decidiendo que comer.</p>
+            </div>
+
+            <div class="photo-card" style="transform: none; border: 1px dashed #ccc; background: #fafafa;">
+                <div style="padding: 40px 20px; color: #bbb; font-weight: bold;">
+                    [ Espacio reservado para nuestra próxima aventura ]
+                </div>
+            </div>
+        </div>
+
+        <p class="footer-note">Hecho con amor y paciencia ❤️.</p>
+    </div>
+
+    <script>
+        
+        const fechaInicio = new Date(2026, 4, 23); 
+
+        function actualizarContador() {
+            const hoy = new Date();
+            const diferenciaMili = hoy - fechaInicio;
+            const diasPasados = Math.floor(diferenciaMili / (1000 * 60 * 60 * 24));
+            document.getElementById('dias').innerText = diasPasados;
+        }
+
+        actualizarContador();
+    </script>
+</body>
+</html>
