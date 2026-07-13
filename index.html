@@ -279,12 +279,12 @@
             <span>Nuestras Canciones ❤️</span>
         </div>
         <div class="playlist-items" id="listaCanciones">
-            <!-- Cargado de forma estática -->
+            <!-- Se carga de manera dinámica -->
         </div>
     </div>
 
     <!-- Botón Flotante Principal -->
-    <button id="btn-musica" onclick="togglePlaylist()" style="
+    <button id="btn-musica" style="
         position: fixed; bottom: 20px; right: 20px;
         background: #ff6b6b; color: white; border: none;
         border-radius: 50%; width: 60px; height: 60px; font-size: 1.6rem;
@@ -329,9 +329,10 @@
                 <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">Cualquier viaje es corto si es contigo. 🗺️</p>
             </div>
 
+            <!-- Aquí aparecerán tus fotos de Firebase de forma infalible -->
             <div id="fotos-dinamicas"></div>
 
-            <button class="btn-aventura" onclick="abrirModalNuevaAventura()">
+            <button class="btn-aventura" id="btnAbrirNuevaAventura">
                 [ Espacio reservado para nuestra próxima aventura ]
             </button>
         </div>
@@ -349,13 +350,13 @@
             <label>Subtítulo o frase corta:</label>
             <input type="text" id="inputSubtitulo" placeholder="Dedícale unas palabras...">
             <div class="modal-buttons">
-                <button class="btn-cancel" onclick="cerrarModal('modalAventura')">Cancelar</button>
+                <button class="btn-cancel" id="btnCancelarModal">Cancelar</button>
                 <button class="btn-submit" id="btnGuardar">Guardar</button>
             </div>
         </div>
     </div>
 
-    <!-- ☁️ SCRIPT PRINCIPAL FIREBASE DE GOOGLE -->
+    <!-- ☁️ SCRIPT INTEGRADO Y PROTEGIDO DE FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, updateDoc, doc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -377,48 +378,57 @@
         const listaCancionesUI = document.getElementById('listaCanciones');
         const musica = document.getElementById('musica-fondo');
         const btnMusica = document.getElementById('btn-musica');
+        const menuPlaylist = document.getElementById('menuPlaylist');
 
         let idAventuraEditando = null;
         let urlFotoActual = "";
         
         const miCancionUnica = { id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3" };
 
-        // 🖼️ GESTIONAR FOTOS EN TIEMPO REAL
+        // 🖼️ ESCUCHAR FOTOS DESDE FIRESTORE EN TIEMPO REAL
         const qAventuras = query(collection(db, "aventuras"), orderBy("fecha", "asc"));
         onSnapshot(qAventuras, (snapshot) => {
             fotosDinamicas.innerHTML = ""; 
+            if(snapshot.empty) {
+                console.log("No se encontraron documentos en la colección 'aventuras'.");
+            }
             snapshot.forEach((documento) => {
                 const datos = documento.data();
                 const id = documento.id;
+                
                 const tarjeta = document.createElement('div');
                 tarjeta.className = 'photo-card';
                 tarjeta.style.position = 'relative';
                 tarjeta.innerHTML = `
-                    <button class="btn-editar-foto" data-id="${id}" style="
+                    <button class="btn-editar-foto" style="
                         position: absolute; top: 15px; right: 15px;
                         background: rgba(255,255,255,0.9); border: 1px solid #ddd;
                         border-radius: 50%; width: 32px; height: 32px; cursor: pointer;
                         font-size: 0.9rem; display: flex; align-items: center; justify-content: center;
                         box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10;
                     ">✏️</button>
-                    <img src="${datos.urlFoto}">
-                    <p>${datos.titulo}</p>
-                    <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">${datos.subtitulo}</p>
+                    <img src="${datos.urlFoto}" alt="Foto de Aventura" onerror="this.style.display='none'; console.log('Error cargando origen de imagen:', this.src);">
+                    <p>${datos.titulo || ''}</p>
+                    <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">${datos.subtitulo || ''}</p>
                 `;
+
                 tarjeta.querySelector('.btn-editar-foto').addEventListener('click', () => {
                     idAventuraEditando = id;
                     urlFotoActual = datos.urlFoto;
-                    document.getElementById('inputTitulo').value = datos.titulo;
-                    document.getElementById('inputSubtitulo').value = datos.subtitulo;
+                    document.getElementById('inputTitulo').value = datos.titulo || '';
+                    document.getElementById('inputSubtitulo').value = datos.subtitulo || '';
                     document.getElementById('inputFoto').value = "";
                     document.querySelector('#modalAventura h3').innerText = "Editar Aventura ✏️";
                     document.getElementById('modalAventura').style.display = 'flex';
                 });
+
                 fotosDinamicas.appendChild(tarjeta);
             });
+        }, (error) => {
+            console.error("Error en el Snapshot de Firebase: ", error);
         });
 
-        // 🎵 RENDERIZAR CANCIÓN ÚNICA REPRODUCTORA
+        // 🎵 RENDERIZAR REPRODUCTOR DE MÚSICA
         function renderizarListaCanciones() {
             listaCancionesUI.innerHTML = "";
             const item = document.createElement('div');
@@ -432,7 +442,7 @@
 
             const controlarAudio = () => {
                 if (musica.paused) {
-                    musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log(e));
+                    musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log("Error de auto-play:", e));
                 } else {
                     musica.pause();
                     btnMusica.innerText = "🎵";
@@ -448,7 +458,27 @@
         musica.addEventListener('play', renderizarListaCanciones);
         musica.addEventListener('pause', renderizarListaCanciones);
 
-        // ACCIONES DEL FORMULARIO DE FOTOS (Procesamiento Híbrido Base64 Estable)
+        // BOTÓN FLOTANTE MÚSICA
+        btnMusica.addEventListener('click', () => {
+            menuPlaylist.classList.toggle('show');
+        });
+
+        // MODAL NUEVA AVENTURA
+        document.getElementById('btnAbrirNuevaAventura').addEventListener('click', () => {
+            idAventuraEditando = null;
+            urlFotoActual = "";
+            document.getElementById('inputTitulo').value = "";
+            document.getElementById('inputSubtitulo').value = "";
+            document.getElementById('inputFoto').value = "";
+            document.querySelector('#modalAventura h3').innerText = "Nueva Aventura ❤️";
+            document.getElementById('modalAventura').style.display = 'flex';
+        });
+
+        document.getElementById('btnCancelarModal').addEventListener('click', () => {
+            document.getElementById('modalAventura').style.display = 'none';
+        });
+
+        // GUARDAR O EDITAR FOTO (Soporte Base64 nativo)
         btnGuardar.addEventListener('click', async () => {
             const file = document.getElementById('inputFoto').files[0];
             const titulo = document.getElementById('inputTitulo').value;
@@ -462,7 +492,6 @@
                 let finalFotoUrl = urlFotoActual;
                 
                 if (file) {
-                    // Convertimos de forma segura a Base64 para que sea idéntico al formato original que tienes en la DB
                     const reader = new FileReader();
                     finalFotoUrl = await new Promise((resolve) => {
                         reader.readAsDataURL(file);
@@ -477,7 +506,7 @@
                 }
                 document.getElementById('modalAventura').style.display = 'none';
             } catch (error) {
-                console.error(error);
+                console.error("Error al guardar en Firestore:", error);
                 alert("Error al guardar la aventura.");
             } finally {
                 btnGuardar.innerText = "Guardar";
@@ -485,34 +514,19 @@
             }
         });
 
+        // Inicialización
         musica.src = miCancionUnica.url;
         renderizarListaCanciones();
     </script>
 
     <script>
+        // Contador de días estable
         const fechaInicio = new Date("2026-05-23T00:00:00");
         function actualizarContador() {
             const hoy = new Date();
             document.getElementById('dias').innerText = Math.floor((hoy - fechaInicio) / (1000 * 60 * 60 * 24));
         }
         actualizarContador();
-
-        function togglePlaylist() {
-            const menu = document.getElementById('menuPlaylist');
-            menu.classList.toggle('show');
-        }
-
-        function abrirModalNuevaAventura() {
-            idAventuraEditando = null;
-            urlFotoActual = "";
-            document.getElementById('inputTitulo').value = "";
-            document.getElementById('inputSubtitulo').value = "";
-            document.getElementById('inputFoto').value = "";
-            document.querySelector('#modalAventura h3').innerText = "Nueva Aventura ❤️";
-            document.getElementById('modalAventura').style.display = 'flex';
-        }
-
-        function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
     </script>
 </body>
 </html>
