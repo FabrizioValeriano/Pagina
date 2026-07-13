@@ -218,6 +218,17 @@
             align-items: center;
         }
 
+        .btn-add-song {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
         .playlist-items {
             overflow-y: auto;
             flex: 1;
@@ -277,9 +288,11 @@
     <div class="playlist-menu" id="menuPlaylist">
         <div class="playlist-header">
             <span>Nuestras Canciones ❤️</span>
+            <!-- Corregido el trigger explícito para abrir el modal de música -->
+            <button class="btn-add-song" id="triggerNuevaCancion">+ Añadir canción</button>
         </div>
         <div class="playlist-items" id="listaCanciones">
-            <!-- Cargado de forma estática -->
+            <!-- Cargado en tiempo real -->
         </div>
     </div>
 
@@ -355,12 +368,27 @@
         </div>
     </div>
 
+    <!-- 🎵 FORMULARIO SUBIR AUDIO REAL DESDE GALERÍA/MÓVIL 🎵 -->
+    <div class="modal" id="modalMusica">
+        <div class="modal-content">
+            <h3>Añadir Canción 🎵</h3>
+            <label>Nombre de la canción y Artista:</label>
+            <input type="text" id="inputNombreCancion" placeholder="Ej: Mi amor amor - Ray Sepúlveda">
+            
+            <label>Selecciona el archivo de música (.mp3):</label>
+            <input type="file" id="inputArchivoMusica" accept="audio/mp3, audio/*">
+
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="cerrarModal('modalMusica')">Cancelar</button>
+                <button class="btn-submit" id="btnGuardarCancion">Subir canción</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ☁️ SCRIPT PRINCIPAL FIREBASE DE GOOGLE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, updateDoc, doc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        // REINCORPORADO: Importación crítica de Storage para que carguen tus fotos de Firebase
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCMooruhFE6c3gCOZEUDqcbs_8Lwast0sc",
@@ -373,18 +401,24 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const storage = getStorage(app); // Activado de nuevo
 
         const btnGuardar = document.getElementById('btnGuardar');
+        const btnGuardarCancion = document.getElementById('btnGuardarCancion');
         const fotosDinamicas = document.getElementById('fotos-dinamicas');
         const listaCancionesUI = document.getElementById('listaCanciones');
         const musica = document.getElementById('musica-fondo');
         const btnMusica = document.getElementById('btn-musica');
+        const triggerNuevaCancion = document.getElementById('triggerNuevaCancion');
 
         let idAventuraEditando = null;
         let urlFotoActual = "";
-        
-        const miCancionUnica = { id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3" };
+        let cancionSeleccionadaId = "base"; 
+        let cacheCanciones = [];
+
+        // Forzar apertura del modal interactivo local
+        triggerNuevaCancion.addEventListener('click', () => {
+            document.getElementById('modalMusica').style.display = 'flex';
+        });
 
         // 🖼️ GESTIONAR FOTOS EN TIEMPO REAL
         const qAventuras = query(collection(db, "aventuras"), orderBy("fecha", "asc"));
@@ -421,37 +455,96 @@
             });
         });
 
-        // 🎵 RENDERIZAR CANCIÓN ÚNICA REPRODUCTORA
+        // 🎵 GESTIONAR PLAYLIST Y DETECTAR ESTADO PLAY/PAUSE
+        const qCanciones = query(collection(db, "canciones"), orderBy("fecha", "asc"));
+        onSnapshot(qCanciones, (snapshot) => {
+            cacheCanciones = [{ id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3" }];
+            snapshot.forEach((docCancion) => {
+                cacheCanciones.push({ id: docCancion.id, ...docCancion.data() });
+            });
+            renderizarListaCanciones();
+        });
+
         function renderizarListaCanciones() {
             listaCancionesUI.innerHTML = "";
-            const item = document.createElement('div');
-            item.className = 'song-item active';
-            const iconoBoton = !musica.paused ? "⏸️" : "▶️";
+            cacheCanciones.forEach((song) => {
+                const item = document.createElement('div');
+                item.className = 'song-item';
+                const esActiva = cancionSeleccionadaId === song.id;
+                if(esActiva) item.classList.add('active');
 
-            item.innerHTML = `
-                <div class="song-info">🎵 <span>${miCancionUnica.nombre}</span></div>
-                <button class="btn-play-pause-item">${iconoBoton}</button>
-            `;
+                // Si es la activa y está sonando ponemos pausa, sino play
+                const iconoBoton = (esActiva && !musica.paused) ? "⏸️" : "▶️";
 
-            const controlarAudio = () => {
-                if (musica.paused) {
-                    musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log(e));
-                } else {
-                    musica.pause();
-                    btnMusica.innerText = "🎵";
-                }
-                renderizarListaCanciones();
-            };
+                item.innerHTML = `
+                    <div class="song-info">🎵 <span>${song.nombre}</span></div>
+                    <button class="btn-play-pause-item">${iconoBoton}</button>
+                `;
 
-            item.querySelector('.song-info').addEventListener('click', controlarAudio);
-            item.querySelector('.btn-play-pause-item').addEventListener('click', controlarAudio);
-            listaCancionesUI.appendChild(item);
+                // Clic en la info o en el botón controla la reproducción inteligente
+                const controlarAudio = () => {
+                    if (cancionSeleccionadaId !== song.id) {
+                        cancionSeleccionadaId = song.id;
+                        musica.src = song.url;
+                        musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log(e));
+                    } else {
+                        if (musica.paused) {
+                            musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log(e));
+                        } else {
+                            musica.pause();
+                            btnMusica.innerText = "🎵";
+                        }
+                    }
+                    renderizarListaCanciones();
+                };
+
+                item.querySelector('.song-info').addEventListener('click', controlarAudio);
+                item.querySelector('.btn-play-pause-item').addEventListener('click', controlarAudio);
+
+                listaCancionesUI.appendChild(item);
+            });
         }
 
+        // Escuchar cambios de estado del reproductor global para refrescar los botones internos automáticamente
         musica.addEventListener('play', renderizarListaCanciones);
         musica.addEventListener('pause', renderizarListaCanciones);
 
-        // ACCIONES DE FORMULARIO DE FOTOS (Con subida real a Storage si añades fotos nuevas)
+        // SUBIDA DE AUDIO REAL BASE64
+        function transformarAudioATexto(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        btnGuardarCancion.addEventListener('click', async () => {
+            const file = document.getElementById('inputArchivoMusica').files[0];
+            const nombre = document.getElementById('inputNombreCancion').value;
+
+            if (!nombre) { alert("Introduce el nombre de la canción ❤️"); return; }
+            if (!file) { alert("Selecciona un archivo .mp3 de tu dispositivo 🎵"); return; }
+
+            btnGuardarCancion.innerText = "Subiendo canción... ⏳";
+            btnGuardarCancion.disabled = true;
+
+            try {
+                const finalAudioUrl = await transformarAudioATexto(file);
+                await addDoc(collection(db, "canciones"), { nombre: nombre, url: finalAudioUrl, fecha: Date.now() });
+                alert("¡Canción añadida con éxito! 😍🎵");
+                document.getElementById('modalMusica').style.display = 'none';
+                document.getElementById('inputNombreCancion').value = "";
+                document.getElementById('inputArchivoMusica').value = "";
+            } catch (error) {
+                alert("Error al procesar el archivo de música.");
+            } finally {
+                btnGuardarCancion.innerText = "Subir canción";
+                btnGuardarCancion.disabled = false;
+            }
+        });
+
+        // ACCIONES DE FORMULARIO DE FOTOS
         btnGuardar.addEventListener('click', async () => {
             const file = document.getElementById('inputFoto').files[0];
             const titulo = document.getElementById('inputTitulo').value;
@@ -463,14 +556,13 @@
 
             try {
                 let finalFotoUrl = urlFotoActual;
-                
                 if (file) {
-                    const nombreFotoUnico = `foto_${Date.now()}_${file.name}`;
-                    const referenciaFoto = ref(storage, 'fotos/' + nombreFotoUnico);
-                    const snapshotFoto = await uploadBytes(referenciaFoto, file);
-                    finalFotoUrl = await getDownloadURL(snapshotFoto.ref);
+                    const reader = new FileReader();
+                    finalFotoUrl = await new Promise((res) => {
+                        reader.readAsDataURL(file);
+                        reader.onload = () => res(reader.result);
+                    });
                 }
-
                 if (idAventuraEditando) {
                     await updateDoc(doc(db, "aventuras", idAventuraEditando), { titulo, subtitulo, urlFoto: finalFotoUrl });
                 } else {
@@ -478,7 +570,6 @@
                 }
                 document.getElementById('modalAventura').style.display = 'none';
             } catch (error) {
-                console.error(error);
                 alert("Error al guardar.");
             } finally {
                 btnGuardar.innerText = "Guardar";
@@ -486,8 +577,7 @@
             }
         });
 
-        musica.src = miCancionUnica.url;
-        renderizarListaCanciones();
+        musica.src = "assets/music/canción.mp3";
     </script>
 
     <script>
