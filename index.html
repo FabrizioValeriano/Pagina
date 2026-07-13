@@ -196,17 +196,35 @@
         </div>
 
         <div class="gallery" id="contenedor-galeria">
-            <!-- Bloques estáticos estándar -->
+            
+            <!-- 📸 AQUÍ ESTÁN TUS 5 FOTOS ORIGINALES COMPLETAS DE NUEVO 📸 -->
             <div class="photo-card">
                 <img src="assets/img/foto1.jpeg" alt="Caminata">
                 <p>📍 Una caminata juntos por la noche.</p>
+                <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">Agarrados de las manos.</p>
             </div>
             <div class="photo-card">
                 <img src="assets/img/foto2.jpeg" alt="Comiendo">
                 <p>🍔 Sentados.</p>
+                <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">3 horas decidiendo qué comer.</p>
+            </div>
+            <div class="photo-card">
+                <img src="assets/img/foto3.jpeg" alt="Parque">
+                <p>🌳 Primera salida al parque.</p>
+                <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">No quería dejar de abrazarte ✨</p>
+            </div>
+            <div class="photo-card">
+                <img src="assets/img/foto4.jpeg" alt="Polera">
+                <p>👕 Tú con mi polera.</p>
+                <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">Te queda mil veces mejor que a mí. ❤️</p>
+            </div>
+            <div class="photo-card">
+                <img src="assets/img/foto5.jpeg" alt="Bus">
+                <p>🚌 Viajando en bus juntos.</p>
+                <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">Cualquier viaje es corto si es contigo. 🗺️</p>
             </div>
 
-            <!-- Sección dinámica para las fotos en la nube -->
+            <!-- Sección dinámica para las fotos nuevas subidas a la nube -->
             <div id="fotos-dinamicas"></div>
 
             <button class="btn-aventura" onclick="abrirModalNuevaAventura()">
@@ -264,6 +282,10 @@
             snapshot.forEach((documento) => {
                 const datos = documento.data();
                 const id = documento.id;
+                
+                // Si la URL es de tipo Base64 antigua, intentamos mostrarla; si no, cargará la de Storage normal.
+                const srcFoto = datos.urlFoto;
+
                 const tarjeta = document.createElement('div');
                 tarjeta.className = 'photo-card';
                 tarjeta.style.position = 'relative';
@@ -275,7 +297,7 @@
                         font-size: 0.9rem; display: flex; align-items: center; justify-content: center;
                         box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10;
                     ">✏️</button>
-                    <img src="${datos.urlFoto}">
+                    <img src="${srcFoto}">
                     <p>${datos.titulo}</p>
                     <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">${datos.subtitulo}</p>
                 `;
@@ -327,7 +349,7 @@
                 urlFotoActual = "";
             } catch (error) {
                 console.error(error);
-                alert("Hubo un problema. Asegúrate de cambiar las reglas en la pestaña Rules de Storage en Firebase.");
+                alert("Hubo un problema al subir la imagen. Asegúrate de que las reglas de Storage estén en modo público.");
             } finally {
                 btnGuardar.innerText = "Guardar";
                 btnGuardar.disabled = false;
