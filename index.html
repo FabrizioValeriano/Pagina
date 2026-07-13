@@ -279,7 +279,7 @@
             <span>Nuestras Canciones ❤️</span>
         </div>
         <div class="playlist-items" id="listaCanciones">
-            <!-- Cargado de forma estática y limpia -->
+            <!-- Cargado de forma estática -->
         </div>
     </div>
 
@@ -359,6 +359,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, updateDoc, doc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        // REINCORPORADO: Importación crítica de Storage para que carguen tus fotos de Firebase
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCMooruhFE6c3gCOZEUDqcbs_8Lwast0sc",
@@ -371,6 +373,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const storage = getStorage(app); // Activado de nuevo
 
         const btnGuardar = document.getElementById('btnGuardar');
         const fotosDinamicas = document.getElementById('fotos-dinamicas');
@@ -381,7 +384,6 @@
         let idAventuraEditando = null;
         let urlFotoActual = "";
         
-        // Canción única fija
         const miCancionUnica = { id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3" };
 
         // 🖼️ GESTIONAR FOTOS EN TIEMPO REAL
@@ -422,10 +424,8 @@
         // 🎵 RENDERIZAR CANCIÓN ÚNICA REPRODUCTORA
         function renderizarListaCanciones() {
             listaCancionesUI.innerHTML = "";
-            
             const item = document.createElement('div');
-            item.className = 'song-item active'; // Siempre activa por ser la única
-
+            item.className = 'song-item active';
             const iconoBoton = !musica.paused ? "⏸️" : "▶️";
 
             item.innerHTML = `
@@ -445,15 +445,13 @@
 
             item.querySelector('.song-info').addEventListener('click', controlarAudio);
             item.querySelector('.btn-play-pause-item').addEventListener('click', controlarAudio);
-
             listaCancionesUI.appendChild(item);
         }
 
-        // Escuchar cambios globales del reproductor
         musica.addEventListener('play', renderizarListaCanciones);
         musica.addEventListener('pause', renderizarListaCanciones);
 
-        // ACCIONES DE FORMULARIO DE FOTOS
+        // ACCIONES DE FORMULARIO DE FOTOS (Con subida real a Storage si añades fotos nuevas)
         btnGuardar.addEventListener('click', async () => {
             const file = document.getElementById('inputFoto').files[0];
             const titulo = document.getElementById('inputTitulo').value;
@@ -465,13 +463,14 @@
 
             try {
                 let finalFotoUrl = urlFotoActual;
+                
                 if (file) {
-                    const reader = new FileReader();
-                    finalFotoUrl = await new Promise((res) => {
-                        reader.readAsDataURL(file);
-                        reader.onload = () => res(reader.result);
-                    });
+                    const nombreFotoUnico = `foto_${Date.now()}_${file.name}`;
+                    const referenciaFoto = ref(storage, 'fotos/' + nombreFotoUnico);
+                    const snapshotFoto = await uploadBytes(referenciaFoto, file);
+                    finalFotoUrl = await getDownloadURL(snapshotFoto.ref);
                 }
+
                 if (idAventuraEditando) {
                     await updateDoc(doc(db, "aventuras", idAventuraEditando), { titulo, subtitulo, urlFoto: finalFotoUrl });
                 } else {
@@ -479,6 +478,7 @@
                 }
                 document.getElementById('modalAventura').style.display = 'none';
             } catch (error) {
+                console.error(error);
                 alert("Error al guardar.");
             } finally {
                 btnGuardar.innerText = "Guardar";
@@ -486,7 +486,6 @@
             }
         });
 
-        // Configuración inicial de la canción única
         musica.src = miCancionUnica.url;
         renderizarListaCanciones();
     </script>
