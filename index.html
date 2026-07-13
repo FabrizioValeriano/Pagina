@@ -394,15 +394,19 @@
             
             <label>Selecciona el archivo de música (.mp3):</label>
             <input type="file" id="inputArchivoMusica" accept="audio/mp3, audio/*">
+            
+            <p style="font-size: 0.75rem; color: #888; margin-top: 6px; line-height: 1.2;">
+                ⚠️ <strong>Nota:</strong> Debido al límite de almacenamiento gratuito, el archivo debe pesar <strong>menos de 700 KB</strong> (puedes recortar el fragmento que más les guste).
+            </p>
 
-            <div class="modal-buttons">
+            <div class="modal-buttons" style="margin-top: 15px;">
                 <button class="btn-cancel" onclick="cerrarModal('modalMusica')">Cancelar</button>
                 <button class="btn-submit" id="btnGuardarCancion">Subir canción</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL FLOTANTE DE NOVEDADES (SOLO APARECE UNA VEZ) -->
+    <!-- MODAL FLOTANTE DE NOVEDADES -->
     <div class="modal" id="modalNovedades">
         <div class="modal-content" style="max-width: 380px;">
             <h3 style="display: flex; align-items: center; gap: 8px;">✨ ¡Nuevas Actualizaciones! v2.0</h3>
@@ -471,7 +475,6 @@
         let cancionSeleccionadaId = "base"; 
         let cacheCanciones = [];
 
-        // Forzar apertura del modal interactivo local
         triggerNuevaCancion.addEventListener('click', () => {
             document.getElementById('modalMusica').style.display = 'flex';
         });
@@ -511,7 +514,7 @@
             });
         });
 
-        // 🎵 GESTIONAR PLAYLIST Y DETECTAR ESTADO PLAY/PAUSE
+        // 🎵 GESTIONAR PLAYLIST
         const qCanciones = query(collection(db, "canciones"), orderBy("fecha", "asc"));
         onSnapshot(qCanciones, (snapshot) => {
             cacheCanciones = [{ id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3" }];
@@ -562,7 +565,6 @@
         musica.addEventListener('play', renderizarListaCanciones);
         musica.addEventListener('pause', renderizarListaCanciones);
 
-        // SUBIDA DE AUDIO REAL BASE64
         function transformarAudioATexto(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -572,7 +574,7 @@
             });
         }
 
-        // CORREGIDO: Cierre estricto e instantáneo sin bloqueos de navegador
+        // CONTROL DE SUBIDA VALIDADO CONTRA TAMAÑO EXCESIVO
         btnGuardarCancion.addEventListener('click', async () => {
             const inputArchivo = document.getElementById('inputArchivoMusica');
             const file = inputArchivo.files[0];
@@ -581,6 +583,13 @@
             if (!nombre) { alert("Introduce el nombre de la canción ❤️"); return; }
             if (!file) { alert("Selecciona un archivo .mp3 de tu dispositivo 🎵"); return; }
 
+            // 🌟 VALIDACIÓN DE TAMAÑO MÁXIMO (700 KB para evitar el límite de 1MB en Base64)
+            const limiteBytes = 700 * 1024; 
+            if (file.size > limiteBytes) {
+                alert("❌ El archivo es demasiado pesado para el servidor gratuito.\n\nPor favor, recorta tu parte favorita de la canción usando una web como 'audiotrimmer.com' o comp rímela para que pese menos de 700 KB.");
+                return;
+            }
+
             btnGuardarCancion.innerText = "Subiendo canción... ⏳";
             btnGuardarCancion.disabled = true;
 
@@ -588,17 +597,15 @@
                 const finalAudioUrl = await transformarAudioATexto(file);
                 await addDoc(collection(db, "canciones"), { nombre: nombre, url: finalAudioUrl, fecha: Date.now() });
                 
-                // Primero cerramos la ventana flotante para dar una respuesta inmediata y limpia
                 document.getElementById('modalMusica').style.display = 'none';
-                
-                // Limpiamos los campos de forma segura sin generar errores
                 document.getElementById('inputNombreCancion').value = "";
                 try { inputArchivo.value = ""; } catch(e) { } 
                 
                 alert("¡Canción añadida con éxito! 😍🎵");
             } catch (error) {
-                alert("Error al procesar el archivo de música.");
+                alert("Error al guardar en el servidor. Inténtalo de nuevo.");
             } finally {
+                // Restauramos el botón pase lo que pase para que no se quede congelado
                 btnGuardarCancion.innerText = "Subir canción";
                 btnGuardarCancion.disabled = false;
             }
@@ -663,7 +670,7 @@
 
         function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
 
-        /* LÓGICA DE CONTROL DE NOVEDADES UNA SOLA VEZ */
+        /* CONTROL DE NOVEDADES UNA SOLA VEZ */
         window.addEventListener('DOMContentLoaded', () => {
             const yaVisto = localStorage.getItem('novedades_v2_visto');
             if (!yaVisto) {
