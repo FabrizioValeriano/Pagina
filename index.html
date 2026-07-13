@@ -388,10 +388,10 @@
         </div>
     </div>
 
-    <!-- TRUCO ANTICACHÉ: Agregamos una marca de versión aleatoria ficticia (?v=99) para forzar al navegador a leer el script nuevo -->
+    <!-- CÓDIGO JS TOTALMENTE REVISADO Y CORREGIDO -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js?v=99";
-        import { getFirestore, collection, addDoc, updateDoc, doc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js?v=99";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, updateDoc, doc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCMooruhFE6c3gCOZEUDqcbs_8Lwast0sc",
@@ -460,6 +460,7 @@
         // ESCUCHAR CANCIONES EN TIEMPO REAL
         const qCanciones = query(collection(db, "canciones"), orderBy("fecha", "asc"));
         onSnapshot(qCanciones, (snapshot) => {
+            // Reinsertamos la canción por defecto "Mi amor amor" de forma correcta
             cacheCanciones = [{ id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3" }];
             snapshot.forEach((docCancion) => {
                 cacheCanciones.push({ id: docCancion.id, ...docCancion.data() });
@@ -499,7 +500,7 @@
                 };
 
                 item.querySelector('.song-info').addEventListener('click', controlarAudio);
-                item.querySelector('.btn-play-pause-item').addEventListener('click', controllingAudio);
+                item.querySelector('.btn-play-pause-item').addEventListener('click', controlarAudio);
 
                 listaCancionesUI.appendChild(item);
             });
@@ -508,7 +509,7 @@
         musica.addEventListener('play', renderizarListaCanciones);
         musica.addEventListener('pause', renderizarListaCanciones);
 
-        // NUEVA SUBIDA DIRECTA LIMPIA DE ERRORES 
+        // SUBIDA DIRECTA LIMPIA DE ERRORES A CLOUDINARY
         btnGuardarCancionReal.addEventListener('click', async () => {
             const nombre = document.getElementById('inputNombreCancion').value;
             const archivo = document.getElementById('inputArchivoMusicaReal').files[0];
@@ -524,7 +525,6 @@
             formData.append('upload_preset', 'diario_preset'); 
 
             try {
-                // Envío directo al servidor de almacenamiento masivo sin pasar por la fragmentación
                 const respuesta = await fetch('https://api.cloudinary.com/v1_1/dpc67b7sc/video/upload', {
                     method: 'POST',
                     body: formData
@@ -590,6 +590,7 @@
             }
         });
 
+        // Configuración inicial de música base
         musica.src = "assets/music/canción.mp3";
     </script>
 
