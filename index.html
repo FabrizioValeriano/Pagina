@@ -111,7 +111,7 @@
             transform: scale(1.01);
         }
 
-        /* Ventanas flotantes (Modales) */
+        /* Modales */
         .modal {
             display: none;
             position: fixed;
@@ -147,14 +147,7 @@
             margin-bottom: 5px;
         }
 
-        .modal-content input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 0.9rem;
-        }
-
+        .modal-content input[type="text"], 
         .modal-content input[type="file"] {
             width: 100%;
             padding: 10px;
@@ -173,6 +166,11 @@
             flex: 1; background: #ff6b6b; color: white; border: none;
             padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;
         }
+        
+        .btn-submit:disabled {
+            background: #ffa8a8;
+            cursor: not-allowed;
+        }
 
         .btn-cancel {
             background: #eee; color: #666; border: none;
@@ -185,7 +183,7 @@
             color: #aaa;
         }
 
-        /* 🎵 PLAYLIST PLAY/PAUSE INTERACTIVA 🎵 */
+        /* 🎵 PLAYLIST 🎵 */
         .playlist-menu {
             position: fixed;
             bottom: 90px;
@@ -200,7 +198,6 @@
             flex-direction: column;
             overflow: hidden;
             border: 1px solid #ffe3e3;
-            
             opacity: 0;
             visibility: hidden;
             transform: translateY(20px);
@@ -284,23 +281,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-
-        .scroll-novedades {
-            max-height: 280px;
-            overflow-y: auto;
-            padding-right: 5px;
-            margin-top: 10px;
-        }
-        .novedad-item {
-            margin-bottom: 15px;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-        .novedad-item strong {
-            color: #ff4757;
-            display: block;
-            margin-bottom: 2px;
         }
     </style>
 </head>
@@ -391,51 +371,24 @@
         </div>
     </div>
 
-    <!-- FORMULARIO OPTIMIZADO: ENLACES DIRECTOS (CERO ERROR DE TAMAÑO) -->
+    <!-- FORMULARIO DIRECTO PARA ARCHIVOS MP3 -->
     <div class="modal" id="modalMusica">
         <div class="modal-content">
             <h3>Añadir Canción 🎵</h3>
             <label>Nombre de la canción y Artista:</label>
             <input type="text" id="inputNombreCancion" placeholder="Ej: I'm Yours - Jason Mraz">
             
-            <label>Enlace/URL directa del audio (.mp3):</label>
-            <input type="text" id="inputUrlCancion" placeholder="https://ejemplo.com/musica.mp3">
+            <label>Selecciona el archivo de música (.mp3):</label>
+            <input type="file" id="inputArchivoMusica" accept="audio/mp3, audio/mpeg">
             
-            <p style="font-size: 0.75rem; color: #666; margin-top: 8px; line-height: 1.3;">
-                💡 <strong>¿Cómo conseguir el enlace?</strong> Puedes usar un convertidor de YouTube a MP3 (como <em>getmp3.pro</em> o similares) que te dé un enlace de descarga, copiar la dirección del enlace y pegarla aquí. ¡Así carga instantáneamente y sin límites de peso!
-            </p>
-
-            <div class="modal-buttons" style="margin-top: 15px;">
+            <div class="modal-buttons" style="margin-top: 20px;">
                 <button class="btn-cancel" onclick="cerrarModal('modalMusica')">Cancelar</button>
-                <button class="btn-submit" id="btnGuardarCancion">Añadir canción</button>
+                <button class="btn-submit" id="btnGuardarCancion">Subir canción... 🚀</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL FLOTANTE DE NOVEDADES -->
-    <div class="modal" id="modalNovedades">
-        <div class="modal-content" style="max-width: 380px;">
-            <h3 style="display: flex; align-items: center; gap: 8px;">✨ ¡Nuevas Actualizaciones! v2.0</h3>
-            <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">Hola mi amor, he mejorado nuestro espacio digital. Aquí tienes los detalles de las nuevas funciones instaladas de hoy:</p>
-            
-            <div class="scroll-novedades">
-                <div class="novedad-item">
-                    <strong>🖼️ Sección "Nuestras Aventuras" Interactiva</strong>
-                    <span>Ya no dependemos de fotos fijas. Al final de la página verás un botón punteado para subir recuerdos nuevos con foto.</span>
-                </div>
-                <div class="novedad-item">
-                    <strong>🎵 Playlist Interactiva Avanzada</strong>
-                    <span>Al presionar el botón flotante de la música se desplegará nuestra lista oficial, iniciando por nuestro tema principal predeterminado.</span>
-                </div>
-            </div>
-
-            <div class="modal-buttons" style="margin-top: 15px;">
-                <button class="btn-submit" onclick="aceptarNovedades()" style="width: 100%; flex: none;">¡Entendido, vamos a ver! ❤️</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ☁️ SCRIPT PRINCIPAL FIREBASE DE GOOGLE -->
+    <!-- ☁️ SCRIPT PRINCIPAL CON AUTO-FRAGMENTACIÓN ANTI-BLOQUEO -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, updateDoc, doc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -469,7 +422,7 @@
             document.getElementById('modalMusica').style.display = 'flex';
         });
 
-        // 🖼️ ENLACE DE FOTOS
+        // 🖼️ ESCUCHAR AVENTURAS
         const qAventuras = query(collection(db, "aventuras"), orderBy("fecha", "asc"));
         onSnapshot(qAventuras, (snapshot) => {
             fotosDinamicas.innerHTML = ""; 
@@ -504,10 +457,10 @@
             });
         });
 
-        // 🎵 ENLACE DE CANCIONES
+        // 🎵 ESCUCHAR CANCIONES EN TIEMPO REAL
         const qCanciones = query(collection(db, "canciones"), orderBy("fecha", "asc"));
         onSnapshot(qCanciones, (snapshot) => {
-            cacheCanciones = [{ id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3" }];
+            cacheCanciones = [{ id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3", chunks: null }];
             snapshot.forEach((docCancion) => {
                 cacheCanciones.push({ id: docCancion.id, ...docCancion.data() });
             });
@@ -532,7 +485,15 @@
                 const controlarAudio = () => {
                     if (cancionSeleccionadaId !== song.id) {
                         cancionSeleccionadaId = song.id;
-                        musica.src = song.url;
+                        
+                        // Si la canción está fragmentada, la unimos al vuelo para reproducirla en memoria
+                        if (song.chunks && Array.isArray(song.chunks)) {
+                            const stringCompleto = song.chunks.join('');
+                            musica.src = stringCompleto;
+                        } else {
+                            musica.src = song.url;
+                        }
+                        
                         musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log(e));
                     } else {
                         if (musica.paused) {
@@ -555,31 +516,56 @@
         musica.addEventListener('play', renderizarListaCanciones);
         musica.addEventListener('pause', renderizarListaCanciones);
 
-        // NUEVO MÉTODO ULTRA RÁPIDO: AGREGAR POR URL DIRECTA
+        // 🔥 EL ALGORITMO MÁGICO: FRAGMENTAR MP3 GRANDES EN TROZOS ADMITIDOS POR FIRESTORE 🔥
         btnGuardarCancion.addEventListener('click', async () => {
             const nombre = document.getElementById('inputNombreCancion').value;
-            const urlAudio = document.getElementById('inputUrlCancion').value;
+            const archivo = document.getElementById('inputArchivoMusica').files[0];
 
             if (!nombre) { alert("Introduce el nombre de la canción ❤️"); return; }
-            if (!urlAudio) { alert("Introduce el enlace .mp3 de la canción 🎵"); return; }
+            if (!archivo) { alert("Por favor, selecciona tu archivo .mp3 de tu dispositivo 🎵"); return; }
 
-            btnGuardarCancion.innerText = "Añadiendo... ⏳";
+            btnGuardarCancion.innerText = "Subiendo canción... ⏳";
             btnGuardarCancion.disabled = true;
 
-            try {
-                await addDoc(collection(db, "canciones"), { nombre: nombre, url: urlAudio, fecha: Date.now() });
-                
-                document.getElementById('modalMusica').style.display = 'none';
-                document.getElementById('inputNombreCancion').value = "";
-                document.getElementById('inputUrlCancion').value = "";
-                
-                alert("¡Canción añadida con éxito! 😍🎵");
-            } catch (error) {
-                alert("Hubo un problema con la base de datos.");
-            } finally {
-                btnGuardarCancion.innerText = "Añadir canción";
+            const reader = new FileReader();
+            reader.readAsDataURL(archivo);
+            reader.onload = async () => {
+                try {
+                    const base64String = reader.result;
+                    
+                    // Firestore aguanta máximo ~800,000 caracteres por campo. 
+                    // Cortamos en bloques seguros de 600,000 caracteres.
+                    const tamanoBloque = 600000;
+                    const trozos = [];
+                    for (let i = 0; i < base64String.length; i += tamanoBloque) {
+                        trozos.push(base64String.substring(i, i + tamanoBloque));
+                    }
+
+                    // Guardamos la matriz de trozos completos en la sección gratis
+                    await addDoc(collection(db, "canciones"), {
+                        nombre: nombre,
+                        chunks: trozos,
+                        fecha: Date.now()
+                    });
+
+                    document.getElementById('modalMusica').style.display = 'none';
+                    document.getElementById('inputNombreCancion').value = "";
+                    document.getElementById('inputArchivoMusica').value = "";
+                    
+                    alert("¡Canción guardada con éxito! 😍🎵 Subida directa completada.");
+                } catch (error) {
+                    console.error(error);
+                    alert("Error interno al procesar los fragmentos de audio.");
+                } finally {
+                    btnGuardarCancion.innerText = "Subir canción... 🚀";
+                    btnGuardarCancion.disabled = false;
+                }
+            };
+            reader.onerror = () => {
+                alert("Error al leer el archivo de música.");
+                btnGuardarCancion.innerText = "Subir canción... 🚀";
                 btnGuardarCancion.disabled = false;
-            }
+            };
         });
 
         // ACCIONES DE FOTOS
@@ -640,18 +626,6 @@
         }
 
         function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const yaVisto = localStorage.getItem('novedades_v2_visto');
-            if (!yaVisto) {
-                document.getElementById('modalNovedades').style.display = 'flex';
-            }
-        });
-
-        function aceptarNovedades() {
-            localStorage.setItem('novedades_v2_visto', 'true');
-            cerrarModal('modalNovedades');
-        }
     </script>
 </body>
 </html>
