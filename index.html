@@ -258,8 +258,8 @@
             <!-- Aquí se insertarán las fotos nuevas de la nube dinámicamente -->
             <div id="fotos-dinamicas"></div>
 
-            <!-- El Recuadro Punteado ahora es un botón real -->
-            <button class="btn-aventura" onclick="abrirModal()">
+            <!-- El Recuadro Punteado ahora usa la función limpia -->
+            <button class="btn-aventura" onclick="abrirModalNuevaAventura()">
                 [ Espacio reservado para nuestra próxima aventura ]
             </button>
         </div>
@@ -291,7 +291,7 @@
     <!-- ☁️ LLAMADO A INTERNET: CONEXIÓN CON FIREBASE DE GOOGLE (PLAN B GRATUITO) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, updateDoc, doc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // CONFIGURACIÓN DE FIREBASE ACTUALIZADA CON TUS CREDENCIALES REALES
         const firebaseConfig = {
@@ -310,22 +310,72 @@
         const btnGuardar = document.getElementById('btnGuardar');
         const fotosDinamicas = document.getElementById('fotos-dinamicas');
 
+        // Variable para saber si estamos editando una foto existente
+        let idAventuraEditando = null;
+        let urlFotoActual = "";
+
         // ESCUCHAR EN TIEMPO REAL LAS FOTOS DE LA NUBE
         const q = query(collection(db, "aventuras"), orderBy("fecha", "asc"));
         onSnapshot(q, (snapshot) => {
             fotosDinamicas.innerHTML = ""; 
-            snapshot.forEach((doc) => {
-                const datos = doc.data();
+            snapshot.forEach((documento) => {
+                const datos = documento.data();
+                const id = documento.id;
+                
                 const tarjeta = document.createElement('div');
                 tarjeta.className = 'photo-card';
+                tarjeta.style.position = 'relative'; // Para posicionar el botón de editar
+                
                 tarjeta.innerHTML = `
+                    <button class="btn-editar-foto" data-id="${id}" style="
+                        position: absolute;
+                        top: 15px;
+                        right: 15px;
+                        background: rgba(255,255,255,0.9);
+                        border: 1px solid #ddd;
+                        border-radius: 50%;
+                        width: 32px;
+                        height: 32px;
+                        cursor: pointer;
+                        font-size: 0.9rem;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                        z-index: 10;
+                    ">✏️</button>
                     <img src="${datos.urlFoto}" alt="Aventura">
                     <p>${datos.titulo}</p>
                     <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">${datos.subtitulo}</p>
                 `;
+                
+                // Configurar el botón de editar de esta tarjeta
+                tarjeta.querySelector('.btn-editar-foto').addEventListener('click', () => {
+                    idAventuraEditando = id;
+                    urlFotoActual = datos.urlFoto;
+                    
+                    document.getElementById('inputTitulo').value = datos.titulo;
+                    document.getElementById('inputSubtitulo').value = datos.subtitulo;
+                    document.getElementById('inputFoto').value = ""; // El archivo queda vacío a menos que elijan uno nuevo
+                    
+                    document.querySelector('#modalAventura h3').innerText = "Editar Aventura ✏️";
+                    abrirModal();
+                });
+
                 fotosDinamicas.appendChild(tarjeta);
             });
         });
+
+        // Hacer la función abrirModal accesible globalmente para el botón de abajo
+        window.abrirModalNuevaAventura = function() {
+            idAventuraEditando = null;
+            urlFotoActual = "";
+            document.getElementById('inputTitulo').value = "";
+            document.getElementById('inputSubtitulo').value = "";
+            document.getElementById('inputFoto').value = "";
+            document.querySelector('#modalAventura h3').innerText = "Nueva Aventura ❤️";
+            abrirModal();
+        }
 
         // Función para transformar imagen a Texto Base64
         function transformarImagenATexto(file) {
@@ -337,40 +387,58 @@
             });
         }
 
-        // GUARDAR NUEVA FOTO EN LA NUBE
+        // GUARDAR O ACTUALIZAR EN LA NUBE
         btnGuardar.addEventListener('click', async () => {
             const file = document.getElementById('inputFoto').files[0];
             const titulo = document.getElementById('inputTitulo').value;
             const subtitulo = document.getElementById('inputSubtitulo').value;
 
-            if (!file || !titulo || !subtitulo) {
-                alert("Por favor, llena todos los campos y selecciona una foto ❤️");
+            if (!titulo || !subtitulo) {
+                alert("Por favor, llena los campos de texto ❤️");
                 return;
             }
 
-            btnGuardar.innerText = "Subiendo... ⏳";
+            // Si es nueva y no hay foto, es obligatorio poner una
+            if (!idAventuraEditando && !file) {
+                alert("Por favor, selecciona una foto para tu nueva aventura 📸");
+                return;
+            }
+
+            btnGuardar.innerText = "Guardar... ⏳";
             btnGuardar.disabled = true;
 
             try {
-                // Transformamos la foto a texto para guardarla gratis
-                const fotoEnTexto = await transformarImagenATexto(file);
+                let finalFotoUrl = urlFotoActual;
+                
+                // Si el usuario seleccionó una foto nueva (o cambió la anterior)
+                if (file) {
+                    finalFotoUrl = await transformarImagenATexto(file);
+                }
 
-                // Guardamos todo en Firestore
-                await addDoc(collection(db, "aventuras"), {
-                    titulo: titulo,
-                    subtitulo: subtitulo,
-                    urlFoto: fotoEnTexto,
-                    fecha: Date.now()
-                });
+                if (idAventuraEditando) {
+                    // MODO EDITAR: Actualizamos el documento existente
+                    const aventuraRef = doc(db, "aventuras", idAventuraEditando);
+                    await updateDoc(aventuraRef, {
+                        titulo: titulo,
+                        subtitulo: subtitulo,
+                        urlFoto: finalFotoUrl
+                    });
+                    alert("¡Aventura actualizada con éxito! ✏️✨");
+                } else {
+                    // MODO NUEVO: Creamos uno nuevo
+                    await addDoc(collection(db, "aventuras"), {
+                        titulo: titulo,
+                        subtitulo: subtitulo,
+                        urlFoto: finalFotoUrl,
+                        fecha: Date.now()
+                    });
+                    alert("¡Aventura añadida perfectamente! 😍");
+                }
 
-                document.getElementById('inputFoto').value = "";
-                document.getElementById('inputTitulo').value = "";
-                document.getElementById('inputSubtitulo').value = "";
                 cerrarModal();
-                alert("¡Aventura añadida perfectamente! 😍");
             } catch (error) {
                 console.error("Error:", error);
-                alert("Hubo un problema. Intenta con una foto un poco más ligera o pequeña.");
+                alert("Hubo un problema. Si cambiaste la foto, intenta con una un poco más ligera.");
             } finally {
                 btnGuardar.innerText = "Guardar";
                 btnGuardar.disabled = false;
