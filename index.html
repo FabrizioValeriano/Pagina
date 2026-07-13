@@ -197,7 +197,7 @@
 
         <div class="gallery" id="contenedor-galeria">
             
-            <!-- 📸 AQUÍ ESTÁN TUS 5 FOTOS ORIGINALES COMPLETAS DE NUEVO 📸 -->
+            <!-- 5 Fotos estáticas fijas -->
             <div class="photo-card">
                 <img src="assets/img/foto1.jpeg" alt="Caminata">
                 <p>📍 Una caminata juntos por la noche.</p>
@@ -224,7 +224,7 @@
                 <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">Cualquier viaje es corto si es contigo. 🗺️</p>
             </div>
 
-            <!-- Sección dinámica para las fotos nuevas subidas a la nube -->
+            <!-- Aquí se cargarán todas las editables (incluyendo la del Parque del Amor) -->
             <div id="fotos-dinamicas"></div>
 
             <button class="btn-aventura" onclick="abrirModalNuevaAventura()">
@@ -275,7 +275,7 @@
         let idAventuraEditando = null;
         let urlFotoActual = "";
 
-        // ESCUCHAR AVENTURAS EN TIEMPO REAL
+        // ESCUCHAR AVENTURAS EN TIEMPO REAL (Fuerza la lectura tanto de links nuevos como de base64 antiguos)
         const qAventuras = query(collection(db, "aventuras"), orderBy("fecha", "asc"));
         onSnapshot(qAventuras, (snapshot) => {
             fotosDinamicas.innerHTML = ""; 
@@ -283,9 +283,6 @@
                 const datos = documento.data();
                 const id = documento.id;
                 
-                // Si la URL es de tipo Base64 antigua, intentamos mostrarla; si no, cargará la de Storage normal.
-                const srcFoto = datos.urlFoto;
-
                 const tarjeta = document.createElement('div');
                 tarjeta.className = 'photo-card';
                 tarjeta.style.position = 'relative';
@@ -297,10 +294,11 @@
                         font-size: 0.9rem; display: flex; align-items: center; justify-content: center;
                         box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10;
                     ">✏️</button>
-                    <img src="${srcFoto}">
+                    <img src="${datos.urlFoto}" alt="Foto">
                     <p>${datos.titulo}</p>
                     <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">${datos.subtitulo}</p>
                 `;
+                
                 tarjeta.querySelector('.btn-editar-foto').addEventListener('click', () => {
                     idAventuraEditando = id;
                     urlFotoActual = datos.urlFoto;
@@ -314,7 +312,7 @@
             });
         });
 
-        // GUARDAR FOTOS DIRECTO AL STORAGE (Inmune a fotos pesadas)
+        // GUARDAR FOTOS DIRECTO AL STORAGE
         btnGuardar.addEventListener('click', async () => {
             const file = document.getElementById('inputFoto').files[0];
             const titulo = document.getElementById('inputTitulo').value;
@@ -329,7 +327,7 @@
             try {
                 let finalFotoUrl = urlFotoActual;
 
-                // Subida directa del archivo real a Firebase Storage
+                // Si seleccionan archivo nuevo, se va directo a Storage (soportando fotos pesadas de teléfonos)
                 if (file) {
                     const nombreFotoUnico = `foto_${Date.now()}_${file.name}`;
                     const referenciaFoto = ref(storage, 'fotos/' + nombreFotoUnico);
@@ -349,7 +347,7 @@
                 urlFotoActual = "";
             } catch (error) {
                 console.error(error);
-                alert("Hubo un problema al subir la imagen. Asegúrate de que las reglas de Storage estén en modo público.");
+                alert("Hubo un problema al guardar la foto.");
             } finally {
                 btnGuardar.innerText = "Guardar";
                 btnGuardar.disabled = false;
