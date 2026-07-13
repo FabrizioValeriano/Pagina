@@ -383,7 +383,13 @@
         let idAventuraEditando = null;
         let urlFotoActual = "";
         
-        const miCancionUnica = { id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3" };
+        // 🎵 AQUÍ TIENES TU LISTA DE CANCIONES (Modifica o añade más aquí abajo) 👇
+        const listaCanciones = [
+            { id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3" },
+            { id: "cancion2", nombre: "Mi niña veneno - Ritchie", url: "assets/music/canción 2.mp3" }
+        ];
+
+        let cancionActualId = listaCanciones[0].id;
 
         // 🖼️ ESCUCHAR FOTOS DESDE FIRESTORE EN TIEMPO REAL
         const qAventuras = query(collection(db, "aventuras"), orderBy("fecha", "asc"));
@@ -428,31 +434,42 @@
             console.error("Error en el Snapshot de Firebase: ", error);
         });
 
-        // 🎵 RENDERIZAR REPRODUCTOR DE MÚSICA
+        // 🎵 RENDERIZAR REPRODUCTOR DE MÚSICA CON SOPORTE PARA MÚLTIPLES CANCIONES
         function renderizarListaCanciones() {
             listaCancionesUI.innerHTML = "";
-            const item = document.createElement('div');
-            item.className = 'song-item active';
-            const iconoBoton = !musica.paused ? "⏸️" : "▶️";
+            
+            listaCanciones.forEach((cancion) => {
+                const item = document.createElement('div');
+                const esActiva = cancion.id === cancionActualId;
+                
+                item.className = `song-item ${esActiva ? 'active' : ''}`;
+                const iconoBoton = (esActiva && !musica.paused) ? "⏸️" : "▶️";
 
-            item.innerHTML = `
-                <div class="song-info">🎵 <span>${miCancionUnica.nombre}</span></div>
-                <button class="btn-play-pause-item">${iconoBoton}</button>
-            `;
+                item.innerHTML = `
+                    <div class="song-info">🎵 <span>${cancion.nombre}</span></div>
+                    <button class="btn-play-pause-item">${iconoBoton}</button>
+                `;
 
-            const controlarAudio = () => {
-                if (musica.paused) {
-                    musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log("Error de auto-play:", e));
-                } else {
-                    musica.pause();
-                    btnMusica.innerText = "🎵";
-                }
-                renderizarListaCanciones();
-            };
+                const controlarAudio = () => {
+                    if (cancionActualId !== cancion.id) {
+                        cancionActualId = cancion.id;
+                        musica.src = cancion.url;
+                        musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log("Error de auto-play:", e));
+                    } else {
+                        if (musica.paused) {
+                            musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log("Error de auto-play:", e));
+                        } else {
+                            musica.pause();
+                            btnMusica.innerText = "🎵";
+                        }
+                    }
+                    renderizarListaCanciones();
+                };
 
-            item.querySelector('.song-info').addEventListener('click', controlarAudio);
-            item.querySelector('.btn-play-pause-item').addEventListener('click', controlarAudio);
-            listaCancionesUI.appendChild(item);
+                item.querySelector('.song-info').addEventListener('click', controlarAudio);
+                item.querySelector('.btn-play-pause-item').addEventListener('click', controlarAudio);
+                listaCancionesUI.appendChild(item);
+            });
         }
 
         musica.addEventListener('play', renderizarListaCanciones);
@@ -515,7 +532,7 @@
         });
 
         // Inicialización
-        musica.src = miCancionUnica.url;
+        musica.src = listaCanciones[0].url;
         renderizarListaCanciones();
     </script>
 
