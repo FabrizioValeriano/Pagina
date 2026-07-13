@@ -93,6 +93,85 @@
             font-weight: 500;
         }
 
+        /* Botón de la próxima aventura */
+        .btn-aventura {
+            width: 100%;
+            border: 2px dashed #ffb3b3;
+            background: #fffafb;
+            border-radius: 15px;
+            padding: 40px 20px;
+            color: #ff6b6b;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .btn-aventura:hover {
+            background: #fff0f2;
+            transform: scale(1.01);
+        }
+
+        /* Ventana flotante (Modal formulario) */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            max-width: 360px;
+            width: 100%;
+            text-align: left;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .modal-content h3 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+        }
+
+        .modal-content label {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #666;
+            display: block;
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+
+        .modal-content input[type="text"], .modal-content input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-submit {
+            flex: 1; background: #ff6b6b; color: white; border: none;
+            padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+
+        .btn-cancel {
+            background: #eee; color: #666; border: none;
+            padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+
         .footer-note {
             margin-top: 20px;
             font-size: 0.85rem;
@@ -101,12 +180,14 @@
     </style>
 </head>
 <body>
+
     <!-- Reproductor de Música Oculto -->
     <audio id="musica-fondo" loop>
         <source src="assets/music/canción.mp3" type="audio/mpeg">
         Tu navegador no soporta el elemento de audio.
     </audio>
-    <!-- Botón Flotante de Música -->
+
+    <!-- Botón Flotante de Música Optimizado para iPhone -->
     <button id="btn-musica" onclick="controlarMusica()" style="
         position: fixed;
         bottom: 20px;
@@ -115,16 +196,19 @@
         color: white;
         border: none;
         border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        font-size: 1.5rem;
+        width: 60px;
+        height: 60px;
+        font-size: 1.6rem;
         cursor: pointer;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         z-index: 1000;
         display: flex;
         align-items: center;
         justify-content: center;
         transition: transform 0.2s;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-user-select: none;
+        user-select: none;
     ">🎵</button>
 
     <div class="container">
@@ -138,8 +222,9 @@
         </div>
 
         <!-- Galería de fotos -->
-        <div class="gallery">
+        <div class="gallery" id="contenedor-galeria">
             
+            <!-- Fotos Fijas Iniciales -->
             <div class="photo-card">
                 <img src="assets/img/foto1.jpeg" alt="Caminata">
                 <p>📍 Una caminata juntos por la noche.</p>
@@ -170,21 +255,143 @@
                 <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">Cualquier viaje es corto si es contigo. 🗺️</p>
             </div>
 
-            <div class="photo-card" style="transform: none; border: 1px dashed #ccc; background: #fafafa;">
-                <div style="padding: 40px 20px; color: #bbb; font-weight: bold;">
-                    [ Espacio reservado para nuestra próxima aventura ]
-                </div>
-            </div>
+            <!-- Aquí se insertarán las fotos nuevas de la nube dinámicamente -->
+            <div id="fotos-dinamicas"></div>
+
+            <!-- El Recuadro Punteado ahora es un botón real -->
+            <button class="btn-aventura" onclick="abrirModal()">
+                [ Espacio reservado para nuestra próxima aventura ]
+            </button>
         </div>
 
         <p class="footer-note">Hecho con amor y paciencia ❤️.</p>
     </div>
 
-    <script>
-        
-        // Cambia la línea vieja por esta (formato de texto universal):
-            const fechaInicio = new Date("2026-05-23T00:00:00");
+    <!-- Ventana Flotante Formulario -->
+    <div class="modal" id="modalAventura">
+        <div class="modal-content">
+            <h3>Nueva Aventura ❤️</h3>
+            
+            <label>Selecciona la foto:</label>
+            <input type="file" id="inputFoto" accept="image/*">
 
+            <label>Título (Ej: 🍿 Tarde de películas):</label>
+            <input type="text" id="inputTitulo" placeholder="¿Qué estaban haciendo?">
+
+            <label>Subtítulo o frase corta:</label>
+            <input type="text" id="inputSubtitulo" placeholder="Dedícale unas palabras...">
+
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn-submit" id="btnGuardar">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ☁️ LLAMADO A INTERNET: CONEXIÓN CON FIREBASE DE GOOGLE (PLAN B GRATUITO) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // CONFIGURACIÓN DE FIREBASE ACTUALIZADA CON TUS CREDENCIALES REALES
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMooruhFE6c3gCOZEUDqcbs_8Lwast0sc",
+            authDomain: "nuestro-diario-92e14.firebaseapp.com",
+            projectId: "nuestro-diario-92e14",
+            storageBucket: "nuestro-diario-92e14.firebasestorage.app",
+            messagingSenderId: "101033273231",
+            appId: "1:101033273231:web:def748297fadb48f95c5fa"
+        };
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const btnGuardar = document.getElementById('btnGuardar');
+        const fotosDinamicas = document.getElementById('fotos-dinamicas');
+
+        // ESCUCHAR EN TIEMPO REAL LAS FOTOS DE LA NUBE
+        const q = query(collection(db, "aventuras"), orderBy("fecha", "asc"));
+        onSnapshot(q, (snapshot) => {
+            fotosDinamicas.innerHTML = ""; 
+            snapshot.forEach((doc) => {
+                const datos = doc.data();
+                const tarjeta = document.createElement('div');
+                tarjeta.className = 'photo-card';
+                tarjeta.innerHTML = `
+                    <img src="${datos.urlFoto}" alt="Aventura">
+                    <p>${datos.titulo}</p>
+                    <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">${datos.subtitulo}</p>
+                `;
+                fotosDinamicas.appendChild(tarjeta);
+            });
+        });
+
+        // Función para transformar imagen a Texto Base64
+        function transformarImagenATexto(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // GUARDAR NUEVA FOTO EN LA NUBE
+        btnGuardar.addEventListener('click', async () => {
+            const file = document.getElementById('inputFoto').files[0];
+            const titulo = document.getElementById('inputTitulo').value;
+            const subtitulo = document.getElementById('inputSubtitulo').value;
+
+            if (!file || !titulo || !subtitulo) {
+                alert("Por favor, llena todos los campos y selecciona una foto ❤️");
+                return;
+            }
+
+            btnGuardar.innerText = "Subiendo... ⏳";
+            btnGuardar.disabled = true;
+
+            try {
+                // Transformamos la foto a texto para guardarla gratis
+                const fotoEnTexto = await transformarImagenATexto(file);
+
+                // Guardamos todo en Firestore
+                await addDoc(collection(db, "aventuras"), {
+                    titulo: titulo,
+                    subtitulo: subtitulo,
+                    urlFoto: fotoEnTexto,
+                    fecha: Date.now()
+                });
+
+                document.getElementById('inputFoto').value = "";
+                document.getElementById('inputTitulo').value = "";
+                document.getElementById('inputSubtitulo').value = "";
+                cerrarModal();
+                alert("¡Aventura añadida perfectamente! 😍");
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Hubo un problema. Intenta con una foto un poco más ligera o pequeña.");
+            } finally {
+                btnGuardar.innerText = "Guardar";
+                btnGuardar.disabled = false;
+            }
+        });
+    </script>
+
+    <!-- Scripts de funcionamiento de interfaz -->
+    <script>
+        const fechaInicio = new Date("2026-05-23T00:00:00");
+
+        function actualizarContador() {
+            const hoy = new Date();
+            const diferenciaMili = hoy - fechaInicio;
+            const diasPasados = Math.floor(diferenciaMili / (1000 * 60 * 60 * 24));
+            document.getElementById('dias').innerText = diasPasados;
+        }
+
+        actualizarContador();
+
+        // Funciones del reproductor de música
         function controlarMusica() {
             const musica = document.getElementById('musica-fondo');
             const btnMusica = document.getElementById('btn-musica');
@@ -194,7 +401,6 @@
                     btnMusica.innerText = "❤️";
                     btnMusica.style.transform = "scale(1.1)";
                 }).catch(error => {
-                    console.log("El navegador bloqueó el audio o no encuentra el archivo:", error);
                     alert("¡Haz clic de nuevo para reproducir!");
                 });
             } else {
@@ -204,18 +410,13 @@
             }
         }
 
-        // 💡 AGREGA ESTA FUNCIÓN AQUÍ ABAJO PARA QUE CALCULE LOS DÍAS AL CARGAR
-        function actualizarContador() {
-            const hoy = new Date();
-            const diferenciaMili = hoy - fechaInicio;
-            const diasPasados = Math.floor(diferenciaMili / (1000 * 60 * 60 * 24));
-            document.getElementById('dias').innerText = diasPasados;
+        // Funciones para abrir y cerrar la ventana flotante
+        function abrirModal() {
+            document.getElementById('modalAventura').style.display = 'flex';
         }
-
-        // 🚀 Y EJECÚTALA AQUÍ PARA QUE ARRANQUE DE INMEDIATO
-        actualizarContador();
-
-    </script>
+        function cerrarModal() {
+            document.getElementById('modalAventura').style.display = 'none';
+        }
     </script>
 </body>
 </html>
