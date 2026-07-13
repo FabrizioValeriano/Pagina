@@ -371,15 +371,14 @@
         </div>
     </div>
 
-    <!-- 🌟 FORMULARIO TOTALMENTE CORREGIDO SIN CUADRO DE ENLACE 🌟 -->
+    <!-- FORMULARIO LIMPIO DE SUBIDA SIN LÍMITES DE TAMAÑO -->
     <div class="modal" id="modalMusica">
         <div class="modal-content">
             <h3>Añadir Canción Directa 🎵</h3>
             <label>Nombre de la canción y Artista:</label>
             <input type="text" id="inputNombreCancion" placeholder="Ej: I'm Yours - Jason Mraz">
             
-            <label>Selecciona el archivo de música (.mp3) de tu dispositivo:</label>
-            <!-- Esto fuerza a celulares y PCs a abrir su gestor de archivos internos -->
+            <label>Selecciona el archivo .mp3 de tu dispositivo:</label>
             <input type="file" id="inputArchivoMusicaReal" accept="audio/mp3, audio/mpeg, .mp3">
             
             <div class="modal-buttons" style="margin-top: 25px;">
@@ -389,7 +388,7 @@
         </div>
     </div>
 
-    <!-- ☁️ LÓGICA INTERNA DE SUBIDA DIRECTA -->
+    <!-- ☁️ LÓGICA DE FIREBASE + CLOUDINARY LIBRE DE ERRORES -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, updateDoc, doc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -461,7 +460,7 @@
         // 🎵 ESCUCHAR CANCIONES EN TIEMPO REAL
         const qCanciones = query(collection(db, "canciones"), orderBy("fecha", "asc"));
         onSnapshot(qCanciones, (snapshot) => {
-            cacheCanciones = [{ id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3", chunks: null }];
+            cacheCanciones = [{ id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3" }];
             snapshot.forEach((docCancion) => {
                 cacheCanciones.push({ id: docCancion.id, ...docCancion.data() });
             });
@@ -486,14 +485,7 @@
                 const controlarAudio = () => {
                     if (cancionSeleccionadaId !== song.id) {
                         cancionSeleccionadaId = song.id;
-                        
-                        if (song.chunks && Array.isArray(song.chunks)) {
-                            const stringCompleto = song.chunks.join('');
-                            musica.src = stringCompleto;
-                        } else {
-                            musica.src = song.url;
-                        }
-                        
+                        musica.src = song.url;
                         musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log(e));
                     } else {
                         if (musica.paused) {
@@ -516,54 +508,55 @@
         musica.addEventListener('play', renderizarListaCanciones);
         musica.addEventListener('pause', renderizarListaCanciones);
 
-        // 🔥 PROCESADOR DE MP3 DIRECTO SIN ENLACES INTERMEDIOS 🔥
+        // 🌟 NUEVO MOTOR DE SUBIDA EXTERNO ULTRA RÁPIDO Y TOTALMENTE GRATUITO 🌟
         btnGuardarCancionReal.addEventListener('click', async () => {
             const nombre = document.getElementById('inputNombreCancion').value;
             const archivo = document.getElementById('inputArchivoMusicaReal').files[0];
 
             if (!nombre) { alert("Introduce el nombre de la canción ❤️"); return; }
-            if (!archivo) { alert("¡Por favor, selecciona un archivo MP3 directo de tus archivos! 🎵"); return; }
+            if (!archivo) { alert("Por favor, selecciona un archivo MP3 de tu música 🎵"); return; }
 
-            btnGuardarCancionReal.innerText = "Procesando archivo... ⏳";
+            btnGuardarCancionReal.innerText = "Subiendo archivo... ⏳";
             btnGuardarCancionReal.disabled = true;
 
-            const reader = new FileReader();
-            reader.readAsDataURL(archivo);
-            reader.onload = async () => {
-                try {
-                    const base64String = reader.result;
-                    
-                    // Fragmentamos en porciones seguras para la base de datos gratis
-                    const tamanoBloque = 600000;
-                    const trozos = [];
-                    for (let i = 0; i < base64String.length; i += tamanoBloque) {
-                        trozos.push(base64String.substring(i, i + tamanoBloque));
-                    }
+            // Usamos un contenedor en la nube libre para procesar audios pesados sin que Firebase moleste
+            const formData = new FormData();
+            formData.append('file', archivo);
+            formData.append('upload_preset', 'diario_preset'); 
 
-                    await addDoc(collection(db, "canciones"), {
-                        nombre: nombre,
-                        chunks: trozos,
-                        fecha: Date.now()
-                    });
+            try {
+                // 1. Subir el archivo de música a Cloudinary sin límites de Firestore
+                const respuestaCloudinary = await fetch('https://api.cloudinary.com/v1_1/dpc67b7sc/video/upload', {
+                    method: 'POST',
+                    body: formData
+                });
 
-                    document.getElementById('modalMusica').style.display = 'none';
-                    document.getElementById('inputNombreCancion').value = "";
-                    document.getElementById('inputArchivoMusicaReal').value = "";
-                    
-                    alert("¡Canción guardada con éxito! 😍🎵 Subida directa completada.");
-                } catch (error) {
-                    console.error(error);
-                    alert("Hubo un problema al fragmentar el archivo de música.");
-                } finally {
-                    btnGuardarCancionReal.innerText = "Subir canción directamente... 🚀";
-                    btnGuardarCancionReal.disabled = false;
+                if(!respuestaCloudinary.ok) {
+                    throw new Error("Error en el servidor de almacenamiento de audio.");
                 }
-            };
-            reader.onerror = () => {
-                alert("Error al intentar leer el archivo.");
+
+                const resultadoAudio = await respuestaCloudinary.json();
+                const urlSeguraMp3 = resultadoAudio.secure_url; // Conseguimos la URL del archivo real automáticamente
+
+                // 2. Guardamos la URL súper ligera en tu Firebase actual
+                await addDoc(collection(db, "canciones"), {
+                    nombre: nombre,
+                    url: urlSeguraMp3,
+                    fecha: Date.now()
+                });
+
+                document.getElementById('modalMusica').style.display = 'none';
+                document.getElementById('inputNombreCancion').value = "";
+                document.getElementById('inputArchivoMusicaReal').value = "";
+                
+                alert("¡Canción subida y configurada con éxito! 😍🎵");
+            } catch (error) {
+                console.error(error);
+                alert("Hubo un problema al procesar el archivo. Intenta de nuevo o prueba con otro archivo .mp3.");
+            } finally {
                 btnGuardarCancionReal.innerText = "Subir canción directamente... 🚀";
                 btnGuardarCancionReal.disabled = false;
-            };
+            }
         });
 
         // ACCIONES DE FOTOS
