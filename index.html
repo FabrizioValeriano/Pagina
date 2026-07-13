@@ -269,18 +269,13 @@
             font-weight: bold;
         }
 
-        .btn-play-pause-item {
-            background: #ff6b6b;
+        .btn-link-out {
+            background: none;
             border: none;
-            color: white;
-            border-radius: 50%;
-            width: 26px;
-            height: 26px;
-            font-size: 0.75rem;
+            color: #ff6b6b;
+            font-size: 1rem;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            padding: 4px;
         }
     </style>
 </head>
@@ -371,24 +366,23 @@
         </div>
     </div>
 
-    <!-- Formulario Música Directa -->
+    <!-- Formulario Música Directa por Enlace (Inmune a Errores de Servidor) -->
     <div class="modal" id="modalMusica">
         <div class="modal-content">
-            <h3>Añadir Canción Directa 🎵</h3>
+            <h3>Dedicar una Canción 🎵</h3>
             <label>Nombre de la canción y Artista:</label>
             <input type="text" id="inputNombreCancion" placeholder="Ej: I'm Yours - Jason Mraz">
             
-            <label>Selecciona el archivo .mp3 de tu dispositivo:</label>
-            <input type="file" id="inputArchivoMusicaReal" accept="audio/mp3, audio/mpeg, .mp3">
+            <label>Enlace de la canción (YouTube, Spotify, Soundcloud, etc):</label>
+            <input type="text" id="inputUrlCancion" placeholder="Pega el link de la canción aquí 🔗">
             
             <div class="modal-buttons" style="margin-top: 25px;">
                 <button class="btn-cancel" onclick="cerrarModal('modalMusica')">Cancelar</button>
-                <button class="btn-submit" id="btnGuardarCancionReal">Subir canción directamente... 🚀</button>
+                <button class="btn-submit" id="btnGuardarCancionReal">Dedicar canción... 🚀</button>
             </div>
         </div>
     </div>
 
-    <!-- CÓDIGO JS TOTALMENTE REVISADO Y CORREGIDO -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, updateDoc, doc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -460,10 +454,9 @@
         // ESCUCHAR CANCIONES EN TIEMPO REAL
         const qCanciones = query(collection(db, "canciones"), orderBy("fecha", "asc"));
         onSnapshot(qCanciones, (snapshot) => {
-            // Reinsertamos la canción por defecto "Mi amor amor" de forma correcta
-            cacheCanciones = [{ id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3" }];
+            cacheCanciones = [{ id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3", esLink: false }];
             snapshot.forEach((docCancion) => {
-                cacheCanciones.push({ id: docCancion.id, ...docCancion.data() });
+                cacheCanciones.push({ id: docCancion.id, ...docCancion.data(), esLink: true });
             });
             renderizarListaCanciones();
         });
@@ -476,83 +469,70 @@
                 const esActiva = cancionSeleccionadaId === song.id;
                 if(esActiva) item.classList.add('active');
 
-                const iconoBoton = (esActiva && !musica.paused) ? "⏸️" : "▶️";
-
-                item.innerHTML = `
-                    <div class="song-info">🎵 <span>${song.nombre}</span></div>
-                    <button class="btn-play-pause-item">${iconoBoton}</button>
-                `;
-
-                const controlarAudio = () => {
-                    if (cancionSeleccionadaId !== song.id) {
-                        cancionSeleccionadaId = song.id;
-                        musica.src = song.url;
-                        musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log(e));
-                    } else {
-                        if (musica.paused) {
+                if (!song.esLink) {
+                    const iconoBoton = (esActiva && !musica.paused) ? "⏸️" : "▶️";
+                    item.innerHTML = `
+                        <div class="song-info">🎵 <span>${song.nombre}</span></div>
+                        <button class="btn-play-pause-item" style="background:#ff6b6b; border:none; color:white; border-radius:50%; width:26px; height:26px; font-size:0.75rem; cursor:pointer;">${iconoBoton}</button>
+                    `;
+                    
+                    const acc = () => {
+                        if (cancionSeleccionadaId !== song.id) {
+                            cancionSeleccionadaId = song.id;
+                            musica.src = song.url;
                             musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log(e));
                         } else {
-                            musica.pause();
-                            btnMusica.innerText = "🎵";
+                            if (musica.paused) {
+                                musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log(e));
+                            } else {
+                                musica.pause();
+                                btnMusica.innerText = "🎵";
+                            }
                         }
-                    }
-                    renderizarListaCanciones();
-                };
-
-                item.querySelector('.song-info').addEventListener('click', controlarAudio);
-                item.querySelector('.btn-play-pause-item').addEventListener('click', controlarAudio);
-
+                        renderizarListaCanciones();
+                    };
+                    item.querySelector('.song-info').addEventListener('click', acc);
+                    item.querySelector('button').addEventListener('click', acc);
+                } else {
+                    item.innerHTML = `
+                        <div class="song-info">🔗 <span>${song.nombre}</span></div>
+                        <button class="btn-link-out" title="Abrir enlace">🚀</button>
+                    `;
+                    item.addEventListener('click', () => {
+                        window.open(song.url, '_blank');
+                    });
+                }
                 listaCancionesUI.appendChild(item);
             });
         }
 
-        musica.addEventListener('play', renderizarListaCanciones);
-        musica.addEventListener('pause', renderizarListaCanciones);
-
-        // SUBIDA DIRECTA LIMPIA DE ERRORES A CLOUDINARY
+        // AGREGAR CANCIÓN POR ENLACE DIRECTO (Cero errores de servidor)
         btnGuardarCancionReal.addEventListener('click', async () => {
             const nombre = document.getElementById('inputNombreCancion').value;
-            const archivo = document.getElementById('inputArchivoMusicaReal').files[0];
+            const urlLink = document.getElementById('inputUrlCancion').value;
 
             if (!nombre) { alert("Introduce el nombre de la canción ❤️"); return; }
-            if (!archivo) { alert("Por favor, selecciona un archivo MP3 de tu música 🎵"); return; }
+            if (!urlLink) { alert("Por favor, introduce o pega el enlace de la canción 🔗"); return; }
 
-            btnGuardarCancionReal.innerText = "Subiendo archivo... ⏳";
+            btnGuardarCancionReal.innerText = "Guardando... ⏳";
             btnGuardarCancionReal.disabled = true;
 
-            const formData = new FormData();
-            formData.append('file', archivo);
-            formData.append('upload_preset', 'diario_preset'); 
-
             try {
-                const respuesta = await fetch('https://api.cloudinary.com/v1_1/dpc67b7sc/video/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if(!respuesta.ok) {
-                    throw new Error("Fallo en el servidor.");
-                }
-
-                const resultadoAudio = await respuesta.json();
-                const urlSeguraMp3 = resultadoAudio.secure_url; 
-
                 await addDoc(collection(db, "canciones"), {
                     nombre: nombre,
-                    url: urlSeguraMp3,
+                    url: urlLink,
                     fecha: Date.now()
                 });
 
                 document.getElementById('modalMusica').style.display = 'none';
                 document.getElementById('inputNombreCancion').value = "";
-                document.getElementById('inputArchivoMusicaReal').value = "";
+                document.getElementById('inputUrlCancion').value = "";
                 
-                alert("¡Canción subida y configurada con éxito! 😍🎵");
+                alert("¡Canción dedicada con éxito! 😍🔗");
             } catch (error) {
-                console.error(error);
-                alert("Ocurrió un error al guardar el archivo en el servidor. Inténtalo de nuevo.");
+                alert("Ocurrió un error al guardar en la base de datos.");
             } finally {
-                btnGuardarCancionReal.innerText = "Subir canción directamente... 🚀";
+                btnGuardarCancionReal.innerText = "Dedicar canción... 🚀";
                 btnGuardarCancionReal.disabled = false;
             }
         });
@@ -590,7 +570,6 @@
             }
         });
 
-        // Configuración inicial de música base
         musica.src = "assets/music/canción.mp3";
     </script>
 
