@@ -279,7 +279,7 @@
             justify-content: center;
         }
 
-        /* 🆕 ESTILOS PARA EL MODAL DE NOVEDADES (WHAT'S NEW) */
+        /* ESTILOS PARA EL MODAL DE NOVEDADES (WHAT'S NEW) */
         .novedad-item {
             margin-bottom: 15px;
             font-size: 0.9rem;
@@ -402,7 +402,7 @@
         </div>
     </div>
 
-    <!-- 🆕 NUEVO: MODAL FLOTANTE DE NOVEDADES (SOLO APARECE UNA VEZ) -->
+    <!-- MODAL FLOTANTE DE NOVEDADES (SOLO APARECE UNA VEZ) -->
     <div class="modal" id="modalNovedades">
         <div class="modal-content" style="max-width: 380px;">
             <h3 style="display: flex; align-items: center; gap: 8px;">✨ ¡Nuevas Actualizaciones! v2.0</h3>
@@ -572,8 +572,10 @@
             });
         }
 
+        // CORREGIDO: Cierre estricto e instantáneo sin bloqueos de navegador
         btnGuardarCancion.addEventListener('click', async () => {
-            const file = document.getElementById('inputArchivoMusica').files[0];
+            const inputArchivo = document.getElementById('inputArchivoMusica');
+            const file = inputArchivo.files[0];
             const nombre = document.getElementById('inputNombreCancion').value;
 
             if (!nombre) { alert("Introduce el nombre de la canción ❤️"); return; }
@@ -585,10 +587,15 @@
             try {
                 const finalAudioUrl = await transformarAudioATexto(file);
                 await addDoc(collection(db, "canciones"), { nombre: nombre, url: finalAudioUrl, fecha: Date.now() });
-                alert("¡Canción añadida con éxito! 😍🎵");
+                
+                // Primero cerramos la ventana flotante para dar una respuesta inmediata y limpia
                 document.getElementById('modalMusica').style.display = 'none';
+                
+                // Limpiamos los campos de forma segura sin generar errores
                 document.getElementById('inputNombreCancion').value = "";
-                document.getElementById('inputArchivoMusica').value = "";
+                try { inputArchivo.value = ""; } catch(e) { } 
+                
+                alert("¡Canción añadida con éxito! 😍🎵");
             } catch (error) {
                 alert("Error al procesar el archivo de música.");
             } finally {
@@ -656,21 +663,16 @@
 
         function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
 
-        /* 🆕 LÓGICA INTELIGENTE DE CONTROL DE NOVEDADES UNA SOLA VEZ */
+        /* LÓGICA DE CONTROL DE NOVEDADES UNA SOLA VEZ */
         window.addEventListener('DOMContentLoaded', () => {
-            // Buscamos si ya existe el registro de que leyó la actualización 2.0
             const yaVisto = localStorage.getItem('novedades_v2_visto');
-            
             if (!yaVisto) {
-                // Si nunca lo ha visto, se lo mostramos inmediatamente al cargar la web
                 document.getElementById('modalNovedades').style.display = 'flex';
             }
         });
 
         function aceptarNovedades() {
-            // Guardamos la marca permanente en el navegador actual
             localStorage.setItem('novedades_v2_visto', 'true');
-            // Cerramos la ventana
             cerrarModal('modalNovedades');
         }
     </script>
