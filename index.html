@@ -177,18 +177,100 @@
             font-size: 0.85rem;
             color: #aaa;
         }
+
+        /* 🎵 NUEVOS ESTILOS DEL MENÚ DESPLEGABLE DE MÚSICA 🎵 */
+        .playlist-menu {
+            display: none;
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 280px;
+            max-height: 350px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.15);
+            z-index: 1500;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #ffe3e3;
+            animation: desplegarHaciaArriba 0.3s ease-out;
+        }
+
+        @keyframes desplegarHaciaArriba {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .playlist-header {
+            background: #fff0f0;
+            padding: 12px;
+            font-weight: bold;
+            color: #ff6b6b;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #ffb3b3;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-add-song {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .playlist-items {
+            overflow-y: auto;
+            flex: 1;
+            padding: 5px 0;
+            text-align: left;
+        }
+
+        .song-item {
+            padding: 10px 15px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f9f9f9;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s;
+        }
+
+        .song-item:hover {
+            background: #fff5f5;
+        }
+
+        .song-item.active {
+            background: #ffe8e8;
+            color: #ff4757;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
 
-    <!-- Reproductor de Música Oculto -->
-    <audio id="musica-fondo" loop>
-        <source src="assets/music/canción.mp3" type="audio/mpeg">
-        Tu navegador no soporta el elemento de audio.
-    </audio>
+    <!-- Elemento Reproductor de Audio Dinámico (Su fuente cambiará por código) -->
+    <audio id="musica-fondo" loop></audio>
 
-    <!-- Botón Flotante de Música Optimizado para iPhone -->
-    <button id="btn-musica" onclick="controlarMusica()" style="
+    <!-- 🎵 MENÚ DESPLEGABLE DE PLAYLIST 🎵 -->
+    <div class="playlist-menu" id="menuPlaylist">
+        <div class="playlist-header">
+            <span>Nuestras Canciones ❤️</span>
+            <button class="btn-add-song" id="btnNuevaCancion">+ Añadir canción</button>
+        </div>
+        <div class="playlist-items" id="listaCanciones">
+            <!-- Aquí se cargarán las canciones dinámicamente -->
+        </div>
+    </div>
+
+    <!-- Botón Flotante de Música principal -->
+    <button id="btn-musica" onclick="togglePlaylist()" style="
         position: fixed;
         bottom: 20px;
         right: 20px;
@@ -258,7 +340,7 @@
             <!-- Aquí se insertarán las fotos nuevas de la nube dinámicamente -->
             <div id="fotos-dinamicas"></div>
 
-            <!-- El Recuadro Punteado ahora usa la función limpia -->
+            <!-- El Recuadro Punteado -->
             <button class="btn-aventura" onclick="abrirModalNuevaAventura()">
                 [ Espacio reservado para nuestra próxima aventura ]
             </button>
@@ -267,7 +349,7 @@
         <p class="footer-note">Hecho con amor y paciencia ❤️.</p>
     </div>
 
-    <!-- Ventana Flotante Formulario -->
+    <!-- Ventana Flotante Formulario Aventuras -->
     <div class="modal" id="modalAventura">
         <div class="modal-content">
             <h3>Nueva Aventura ❤️</h3>
@@ -288,12 +370,11 @@
         </div>
     </div>
 
-    <!-- ☁️ LLAMADO A INTERNET: CONEXIÓN CON FIREBASE DE GOOGLE (PLAN B GRATUITO) -->
+    <!-- ☁️ CONEXIÓN CON FIREBASE DE GOOGLE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, updateDoc, doc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // CONFIGURACIÓN DE FIREBASE ACTUALIZADA CON TUS CREDENCIALES REALES
         const firebaseConfig = {
             apiKey: "AIzaSyCMooruhFE6c3gCOZEUDqcbs_8Lwast0sc",
             authDomain: "nuestro-diario-92e14.firebaseapp.com",
@@ -303,20 +384,23 @@
             appId: "1:101033273231:web:def748297fadb48f95c5fa"
         };
 
-        // Inicializar Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         const btnGuardar = document.getElementById('btnGuardar');
         const fotosDinamicas = document.getElementById('fotos-dinamicas');
+        const listaCancionesUI = document.getElementById('listaCanciones');
+        const btnNuevaCancion = document.getElementById('btnNuevaCancion');
+        const musica = document.getElementById('musica-fondo');
+        const btnMusica = document.getElementById('btn-musica');
 
-        // Variable para saber si estamos editando una foto existente
         let idAventuraEditando = null;
         let urlFotoActual = "";
+        let cancionSeleccionadaId = null;
 
-        // ESCUCHAR EN TIEMPO REAL LAS FOTOS DE LA NUBE
-        const q = query(collection(db, "aventuras"), orderBy("fecha", "asc"));
-        onSnapshot(q, (snapshot) => {
+        // 🖼️ CARGAR ADVENTURAS EN TIEMPO REAL
+        const qAventuras = query(collection(db, "aventuras"), orderBy("fecha", "asc"));
+        onSnapshot(qAventuras, (snapshot) => {
             fotosDinamicas.innerHTML = ""; 
             snapshot.forEach((documento) => {
                 const datos = documento.data();
@@ -324,49 +408,103 @@
                 
                 const tarjeta = document.createElement('div');
                 tarjeta.className = 'photo-card';
-                tarjeta.style.position = 'relative'; // Para posicionar el botón de editar
+                tarjeta.style.position = 'relative';
                 
                 tarjeta.innerHTML = `
                     <button class="btn-editar-foto" data-id="${id}" style="
-                        position: absolute;
-                        top: 15px;
-                        right: 15px;
-                        background: rgba(255,255,255,0.9);
-                        border: 1px solid #ddd;
-                        border-radius: 50%;
-                        width: 32px;
-                        height: 32px;
-                        cursor: pointer;
-                        font-size: 0.9rem;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                        z-index: 10;
+                        position: absolute; top: 15px; right: 15px;
+                        background: rgba(255,255,255,0.9); border: 1px solid #ddd;
+                        border-radius: 50%; width: 32px; height: 32px; cursor: pointer;
+                        font-size: 0.9rem; display: flex; align-items: center; justify-content: center;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10;
                     ">✏️</button>
                     <img src="${datos.urlFoto}" alt="Aventura">
                     <p>${datos.titulo}</p>
                     <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">${datos.subtitulo}</p>
                 `;
                 
-                // Configurar el botón de editar de esta tarjeta
                 tarjeta.querySelector('.btn-editar-foto').addEventListener('click', () => {
                     idAventuraEditando = id;
                     urlFotoActual = datos.urlFoto;
-                    
                     document.getElementById('inputTitulo').value = datos.titulo;
                     document.getElementById('inputSubtitulo').value = datos.subtitulo;
-                    document.getElementById('inputFoto').value = ""; // El archivo queda vacío a menos que elijan uno nuevo
-                    
+                    document.getElementById('inputFoto').value = "";
                     document.querySelector('#modalAventura h3').innerText = "Editar Aventura ✏️";
                     abrirModal();
                 });
-
                 fotosDinamicas.appendChild(tarjeta);
             });
         });
 
-        // Hacer la función abrirModal accesible globalmente para el botón de abajo
+        // 🎵 CARGAR Y GESTIONAR CANCIONES DESDE FIREBASE
+        const qCanciones = query(collection(db, "canciones"), orderBy("fecha", "asc"));
+        onSnapshot(qCanciones, (snapshot) => {
+            listaCancionesUI.innerHTML = "";
+            
+            // Canción local base por si no tienen internet o es la primera
+            const cancionBase = { id: "base", nombre: "🎵 Canción Inicial de Fondo", url: "assets/music/canción.mp3" };
+            agregarCancionALista(cancionBase);
+
+            snapshot.forEach((docCancion) => {
+                const datos = docCancion.data();
+                agregarCancionALista({ id: docCancion.id, ...datos });
+            });
+        });
+
+        function agregarCancionALista(song) {
+            const item = document.createElement('div');
+            item.className = 'song-item';
+            if(cancionSeleccionadaId === song.id) item.classList.add('active');
+            
+            item.innerHTML = `▶️ <span>${song.nombre}</span>`;
+            
+            item.addEventListener('click', () => {
+                reproducirEstaCancion(song);
+            });
+            listaCancionesUI.appendChild(item);
+        }
+
+        function reproducirEstaCancion(song) {
+            cancionSeleccionadaId = song.id;
+            
+            // Marcar elemento visualmente activo
+            document.querySelectorAll('.song-item').forEach(el => el.classList.remove('active'));
+            
+            // Cambiar archivo de música
+            musica.src = song.url;
+            musica.play().then(() => {
+                btnMusica.innerText = "❤️";
+                btnMusica.style.transform = "scale(1.1)";
+            }).catch(e => console.log("Espera interacción"));
+            
+            // refrescar lista para marcar activo
+            const items = document.querySelectorAll('.song-item');
+            items.forEach(item => {
+                if(item.innerText.includes(song.nombre)) item.classList.add('active');
+            });
+        }
+
+        // AGREGAR NUEVA CANCIÓN POR URL
+        btnNuevaCancion.addEventListener('click', async () => {
+            const nombreCan = prompt("Introduce el nombre de la canción:");
+            if (!nombreCan) return;
+            
+            const urlCan = prompt("Pega el enlace directo de tu canción (.mp3):", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3");
+            if (!urlCan) return;
+
+            try {
+                await addDoc(collection(db, "canciones"), {
+                    nombre: nombreCan,
+                    url: urlCan,
+                    fecha: Date.now()
+                });
+                alert("¡Canción agregada a nuestra lista! 🎵✨");
+            } catch (e) {
+                alert("Ocurrió un error guardando tu canción.");
+            }
+        });
+
+        // FUNCIONES DE GUARDADO DE AVENTURAS (IGUALES)
         window.abrirModalNuevaAventura = function() {
             idAventuraEditando = null;
             urlFotoActual = "";
@@ -377,7 +515,6 @@
             abrirModal();
         }
 
-        // Función para transformar imagen a Texto Base64
         function transformarImagenATexto(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -387,7 +524,6 @@
             });
         }
 
-        // GUARDAR O ACTUALIZAR EN LA NUBE
         btnGuardar.addEventListener('click', async () => {
             const file = document.getElementById('inputFoto').files[0];
             const titulo = document.getElementById('inputTitulo').value;
@@ -397,8 +533,6 @@
                 alert("Por favor, llena los campos de texto ❤️");
                 return;
             }
-
-            // Si es nueva y no hay foto, es obligatorio poner una
             if (!idAventuraEditando && !file) {
                 alert("Por favor, selecciona una foto para tu nueva aventura 📸");
                 return;
@@ -409,44 +543,30 @@
 
             try {
                 let finalFotoUrl = urlFotoActual;
-                
-                // Si el usuario seleccionó una foto nueva (o cambió la anterior)
-                if (file) {
-                    finalFotoUrl = await transformarImagenATexto(file);
-                }
+                if (file) finalFotoUrl = await transformarImagenATexto(file);
 
                 if (idAventuraEditando) {
-                    // MODO EDITAR: Actualizamos el documento existente
                     const aventuraRef = doc(db, "aventuras", idAventuraEditando);
-                    await updateDoc(aventuraRef, {
-                        titulo: titulo,
-                        subtitulo: subtitulo,
-                        urlFoto: finalFotoUrl
-                    });
+                    await updateDoc(aventuraRef, { titulo, subtitulo, urlFoto: finalFotoUrl });
                     alert("¡Aventura actualizada con éxito! ✏️✨");
                 } else {
-                    // MODO NUEVO: Creamos uno nuevo
-                    await addDoc(collection(db, "aventuras"), {
-                        titulo: titulo,
-                        subtitulo: subtitulo,
-                        urlFoto: finalFotoUrl,
-                        fecha: Date.now()
-                    });
+                    await addDoc(collection(db, "aventuras"), { titulo, subtitulo, urlFoto: finalFotoUrl, fecha: Date.now() });
                     alert("¡Aventura añadida perfectamente! 😍");
                 }
-
                 cerrarModal();
             } catch (error) {
-                console.error("Error:", error);
-                alert("Hubo un problema. Si cambiaste la foto, intenta con una un poco más ligera.");
+                alert("Hubo un problema al subir los datos.");
             } finally {
                 btnGuardar.innerText = "Guardar";
                 btnGuardar.disabled = false;
             }
         });
+
+        // Configuración inicial de la canción base por defecto al cargar la web
+        musica.src = "assets/music/canción.mp3";
     </script>
 
-    <!-- Scripts de funcionamiento de interfaz -->
+    <!-- Scripts de interfaz general -->
     <script>
         const fechaInicio = new Date("2026-05-23T00:00:00");
 
@@ -456,35 +576,29 @@
             const diasPasados = Math.floor(diferenciaMili / (1000 * 60 * 60 * 24));
             document.getElementById('dias').innerText = diasPasados;
         }
-
         actualizarContador();
 
-        // Funciones del reproductor de música
-        function controlarMusica() {
+        // Desplegar menú de la Playlist
+        function togglePlaylist() {
+            const menu = document.getElementById('menuPlaylist');
+            const btn = document.getElementById('btn-musica');
             const musica = document.getElementById('musica-fondo');
-            const btnMusica = document.getElementById('btn-musica');
 
-            if (musica.paused) {
-                musica.play().then(() => {
-                    btnMusica.innerText = "❤️";
-                    btnMusica.style.transform = "scale(1.1)";
-                }).catch(error => {
-                    alert("¡Haz clic de nuevo para reproducir!");
-                });
+            if (menu.style.display === 'flex') {
+                menu.style.display = 'none';
             } else {
-                musica.pause();
-                btnMusica.innerText = "🎵";
-                btnMusica.style.transform = "scale(1)";
+                menu.style.display = 'flex';
+                // Intento automático de play para iPhone al abrirlo la primera vez
+                if (musica.paused && musica.src) {
+                    musica.play().then(() => {
+                        btn.innerText = "❤️";
+                    }).catch(e => console.log("Pide toque"));
+                }
             }
         }
 
-        // Funciones para abrir y cerrar la ventana flotante
-        function abrirModal() {
-            document.getElementById('modalAventura').style.display = 'flex';
-        }
-        function cerrarModal() {
-            document.getElementById('modalAventura').style.display = 'none';
-        }
+        function abrirModal() { document.getElementById('modalAventura').style.display = 'flex'; }
+        function cerrarModal() { document.getElementById('modalAventura').style.display = 'none'; }
     </script>
 </body>
 </html>
