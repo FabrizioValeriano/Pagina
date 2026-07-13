@@ -278,6 +278,24 @@
             align-items: center;
             justify-content: center;
         }
+
+        /* 🆕 ESTILOS PARA EL MODAL DE NOVEDADES (WHAT'S NEW) */
+        .novedad-item {
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        .novedad-item strong {
+            color: #ff4757;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .scroll-novedades {
+            max-height: 280px;
+            overflow-y: auto;
+            padding-right: 5px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -288,7 +306,6 @@
     <div class="playlist-menu" id="menuPlaylist">
         <div class="playlist-header">
             <span>Nuestras Canciones ❤️</span>
-            <!-- Corregido el trigger explícito para abrir el modal de música -->
             <button class="btn-add-song" id="triggerNuevaCancion">+ Añadir canción</button>
         </div>
         <div class="playlist-items" id="listaCanciones">
@@ -368,7 +385,7 @@
         </div>
     </div>
 
-    <!-- 🎵 FORMULARIO SUBIR AUDIO REAL DESDE GALERÍA/MÓVIL 🎵 -->
+    <!-- FORMULARIO SUBIR AUDIO REAL DESDE GALERÍA/MÓVIL -->
     <div class="modal" id="modalMusica">
         <div class="modal-content">
             <h3>Añadir Canción 🎵</h3>
@@ -381,6 +398,45 @@
             <div class="modal-buttons">
                 <button class="btn-cancel" onclick="cerrarModal('modalMusica')">Cancelar</button>
                 <button class="btn-submit" id="btnGuardarCancion">Subir canción</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🆕 NUEVO: MODAL FLOTANTE DE NOVEDADES (SOLO APARECE UNA VEZ) -->
+    <div class="modal" id="modalNovedades">
+        <div class="modal-content" style="max-width: 380px;">
+            <h3 style="display: flex; align-items: center; gap: 8px;">✨ ¡Nuevas Actualizaciones! v2.0</h3>
+            <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">Hola mi amor, he mejorado nuestro espacio digital. Aquí tienes los detalles de las nuevas funciones instaladas de hoy:</p>
+            
+            <div class="scroll-novedades">
+                <div class="novedad-item">
+                    <strong>🖼️ Sección "Nuestras Aventuras" Interactiva</strong>
+                    <span>Ya no dependemos de fotos fijas. Al final de la página verás un botón punteado para subir recuerdos nuevos con foto, título y hermosas frases cortas directamente desde tu galería.</span>
+                </div>
+                
+                <div class="novedad-item">
+                    <strong>✏️ Botón de Edición Inteligente</strong>
+                    <span>Cada foto subida a la nube ahora cuenta con un botón de lápiz. Si deseas corregir el texto o cambiar la imagen por una mejor, ¡puedes editarla en tiempo real!</span>
+                </div>
+
+                <div class="novedad-item">
+                    <strong>🎵 Playlist Interactiva Avanzada</strong>
+                    <span>Al presionar el botón flotante de la música se desplegará nuestra lista oficial, iniciando por nuestro tema principal predeterminado: <em>"Mi amor amor" de Ray Sepúlveda</em>.</span>
+                </div>
+
+                <div class="novedad-item">
+                    <strong>⏸️ Botones de Pausa Inteligentes</strong>
+                    <span>Cada canción incluye controles independientes de reproducción. Si estás escuchando un tema y lo pausas, al volver a darle "Play" **continuará justo donde se quedó** en vez de reiniciarse.</span>
+                </div>
+
+                <div class="novedad-item">
+                    <strong>☁️ Subida Real de Archivos .MP3</strong>
+                    <span>¡Olvídate de copiar molestos enlaces de internet! Con el botón "+ Añadir canción" puedes seleccionar archivos de música guardados en la memoria de tu móvil para expandir nuestra banda sonora.</span>
+                </div>
+            </div>
+
+            <div class="modal-buttons" style="margin-top: 15px;">
+                <button class="btn-submit" onclick="aceptarNovedades()" style="width: 100%; flex: none;">¡Entendido, vamos a ver! ❤️</button>
             </div>
         </div>
     </div>
@@ -473,7 +529,6 @@
                 const esActiva = cancionSeleccionadaId === song.id;
                 if(esActiva) item.classList.add('active');
 
-                // Si es la activa y está sonando ponemos pausa, sino play
                 const iconoBoton = (esActiva && !musica.paused) ? "⏸️" : "▶️";
 
                 item.innerHTML = `
@@ -481,7 +536,6 @@
                     <button class="btn-play-pause-item">${iconoBoton}</button>
                 `;
 
-                // Clic en la info o en el botón controla la reproducción inteligente
                 const controlarAudio = () => {
                     if (cancionSeleccionadaId !== song.id) {
                         cancionSeleccionadaId = song.id;
@@ -505,7 +559,6 @@
             });
         }
 
-        // Escuchar cambios de estado del reproductor global para refrescar los botones internos automáticamente
         musica.addEventListener('play', renderizarListaCanciones);
         musica.addEventListener('pause', renderizarListaCanciones);
 
@@ -602,6 +655,24 @@
         }
 
         function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        /* 🆕 LÓGICA INTELIGENTE DE CONTROL DE NOVEDADES UNA SOLA VEZ */
+        window.addEventListener('DOMContentLoaded', () => {
+            // Buscamos si ya existe el registro de que leyó la actualización 2.0
+            const yaVisto = localStorage.getItem('novedades_v2_visto');
+            
+            if (!yaVisto) {
+                // Si nunca lo ha visto, se lo mostramos inmediatamente al cargar la web
+                document.getElementById('modalNovedades').style.display = 'flex';
+            }
+        });
+
+        function aceptarNovedades() {
+            // Guardamos la marca permanente en el navegador actual
+            localStorage.setItem('novedades_v2_visto', 'true');
+            // Cerramos la ventana
+            cerrarModal('modalNovedades');
+        }
     </script>
 </body>
 </html>
