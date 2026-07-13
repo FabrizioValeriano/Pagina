@@ -269,13 +269,18 @@
             font-weight: bold;
         }
 
-        .btn-link-out {
-            background: none;
+        .btn-play-pause-item {
+            background: #ff6b6b;
             border: none;
-            color: #ff6b6b;
-            font-size: 1rem;
+            color: white;
+            border-radius: 50%;
+            width: 26px;
+            height: 26px;
+            font-size: 0.75rem;
             cursor: pointer;
-            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
@@ -287,10 +292,10 @@
     <div class="playlist-menu" id="menuPlaylist">
         <div class="playlist-header">
             <span>Nuestras Canciones ❤️</span>
-            <button class="btn-add-song" id="triggerNuevaCancion">+ Añadir canción</button>
+            <button class="btn-add-song" id="triggerNuevaCancion">+ Añadir música</button>
         </div>
         <div class="playlist-items" id="listaCanciones">
-            <!-- Cargado en tiempo real -->
+            <!-- Cargado en tiempo real desde Firebase -->
         </div>
     </div>
 
@@ -314,6 +319,7 @@
         </div>
 
         <div class="gallery" id="contenedor-galeria">
+            <!-- Bloques estáticos -->
             <div class="photo-card">
                 <img src="assets/img/foto1.jpeg" alt="Caminata">
                 <p>📍 Una caminata juntos por la noche.</p>
@@ -340,6 +346,7 @@
                 <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">Cualquier viaje es corto si es contigo. 🗺️</p>
             </div>
 
+            <!-- Sección dinámica para nuevas fotos -->
             <div id="fotos-dinamicas"></div>
 
             <button class="btn-aventura" onclick="abrirModalNuevaAventura()">
@@ -349,7 +356,7 @@
         <p class="footer-note">Hecho con amor y paciencia ❤️.</p>
     </div>
 
-    <!-- Formulario Aventuras -->
+    <!-- Formulario Aventuras (Corregido para soportar fotos pesadas) -->
     <div class="modal" id="modalAventura">
         <div class="modal-content">
             <h3>Nueva Aventura ❤️</h3>
@@ -366,19 +373,19 @@
         </div>
     </div>
 
-    <!-- Formulario Música Directa por Enlace (Inmune a Errores de Servidor) -->
+    <!-- Formulario Música Directa con Firebase Storage -->
     <div class="modal" id="modalMusica">
         <div class="modal-content">
-            <h3>Dedicar una Canción 🎵</h3>
-            <label>Nombre de la canción y Artista:</label>
-            <input type="text" id="inputNombreCancion" placeholder="Ej: I'm Yours - Jason Mraz">
+            <h3>Subir Música de Fondo Real 🎵</h3>
+            <label>Nombre del tema y artista:</label>
+            <input type="text" id="inputNombreCancion" placeholder="Ej: Perfect - Ed Sheeran">
             
-            <label>Enlace de la canción (YouTube, Spotify, Soundcloud, etc):</label>
-            <input type="text" id="inputUrlCancion" placeholder="Pega el link de la canción aquí 🔗">
+            <label>Selecciona el archivo de audio (.mp3):</label>
+            <input type="file" id="inputArchivoAudio" accept="audio/mp3, audio/*">
             
             <div class="modal-buttons" style="margin-top: 25px;">
                 <button class="btn-cancel" onclick="cerrarModal('modalMusica')">Cancelar</button>
-                <button class="btn-submit" id="btnGuardarCancionReal">Dedicar canción... 🚀</button>
+                <button class="btn-submit" id="btnSubirCancionDirecta">Subir canción... 🚀</button>
             </div>
         </div>
     </div>
@@ -386,6 +393,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, updateDoc, doc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCMooruhFE6c3gCOZEUDqcbs_8Lwast0sc",
@@ -398,9 +406,10 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const storage = getStorage(app);
 
         const btnGuardar = document.getElementById('btnGuardar');
-        const btnGuardarCancionReal = document.getElementById('btnGuardarCancionReal');
+        const btnSubirCancionDirecta = document.getElementById('btnSubirCancionDirecta');
         const fotosDinamicas = document.getElementById('fotos-dinamicas');
         const listaCancionesUI = document.getElementById('listaCanciones');
         const musica = document.getElementById('musica-fondo');
@@ -416,7 +425,7 @@
             document.getElementById('modalMusica').style.display = 'flex';
         });
 
-        // ESCUCHAR AVENTURAS
+        // ESCUCHAR AVENTURAS EN TIEMPO REAL
         const qAventuras = query(collection(db, "aventuras"), orderBy("fecha", "asc"));
         onSnapshot(qAventuras, (snapshot) => {
             fotosDinamicas.innerHTML = ""; 
@@ -451,12 +460,12 @@
             });
         });
 
-        // ESCUCHAR CANCIONES EN TIEMPO REAL
+        // ESCUCHAR CANCIONES
         const qCanciones = query(collection(db, "canciones"), orderBy("fecha", "asc"));
         onSnapshot(qCanciones, (snapshot) => {
-            cacheCanciones = [{ id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3", esLink: false }];
+            cacheCanciones = [{ id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3" }];
             snapshot.forEach((docCancion) => {
-                cacheCanciones.push({ id: docCancion.id, ...docCancion.data(), esLink: true });
+                cacheCanciones.push({ id: docCancion.id, ...docCancion.data() });
             });
             renderizarListaCanciones();
         });
@@ -469,107 +478,118 @@
                 const esActiva = cancionSeleccionadaId === song.id;
                 if(esActiva) item.classList.add('active');
 
-                if (!song.esLink) {
-                    const iconoBoton = (esActiva && !musica.paused) ? "⏸️" : "▶️";
-                    item.innerHTML = `
-                        <div class="song-info">🎵 <span>${song.nombre}</span></div>
-                        <button class="btn-play-pause-item" style="background:#ff6b6b; border:none; color:white; border-radius:50%; width:26px; height:26px; font-size:0.75rem; cursor:pointer;">${iconoBoton}</button>
-                    `;
-                    
-                    const acc = () => {
-                        if (cancionSeleccionadaId !== song.id) {
-                            cancionSeleccionadaId = song.id;
-                            musica.src = song.url;
+                const iconoBoton = (esActiva && !musica.paused) ? "⏸️" : "▶️";
+
+                item.innerHTML = `
+                    <div class="song-info">🎵 <span>${song.nombre}</span></div>
+                    <button class="btn-play-pause-item">${iconoBoton}</button>
+                `;
+
+                const controlarAudio = () => {
+                    if (cancionSeleccionadaId !== song.id) {
+                        cancionSeleccionadaId = song.id;
+                        musica.src = song.url;
+                        musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log(e));
+                    } else {
+                        if (musica.paused) {
                             musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log(e));
                         } else {
-                            if (musica.paused) {
-                                musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log(e));
-                            } else {
-                                musica.pause();
-                                btnMusica.innerText = "🎵";
-                            }
+                            musica.pause();
+                            btnMusica.innerText = "🎵";
                         }
-                        renderizarListaCanciones();
-                    };
-                    item.querySelector('.song-info').addEventListener('click', acc);
-                    item.querySelector('button').addEventListener('click', acc);
-                } else {
-                    item.innerHTML = `
-                        <div class="song-info">🔗 <span>${song.nombre}</span></div>
-                        <button class="btn-link-out" title="Abrir enlace">🚀</button>
-                    `;
-                    item.addEventListener('click', () => {
-                        window.open(song.url, '_blank');
-                    });
-                }
+                    }
+                    renderizarListaCanciones();
+                };
+
+                item.querySelector('.song-info').addEventListener('click', controlarAudio);
+                item.querySelector('.btn-play-pause-item').addEventListener('click', controlarAudio);
+
                 listaCancionesUI.appendChild(item);
             });
         }
 
-        // AGREGAR CANCIÓN POR ENLACE DIRECTO (Cero errores de servidor)
-        btnGuardarCancionReal.addEventListener('click', async () => {
-            const nombre = document.getElementById('inputNombreCancion').value;
-            const urlLink = document.getElementById('inputUrlCancion').value;
+        musica.addEventListener('play', renderizarListaCanciones);
+        musica.addEventListener('pause', renderizarListaCanciones);
 
-            if (!nombre) { alert("Introduce el nombre de la canción ❤️"); return; }
-            if (!urlLink) { alert("Por favor, introduce o pega el enlace de la canción 🔗"); return; }
-
-            btnGuardarCancionReal.innerText = "Guardando... ⏳";
-            btnGuardarCancionReal.disabled = true;
-
-            try {
-                await addDoc(collection(db, "canciones"), {
-                    nombre: nombre,
-                    url: urlLink,
-                    fecha: Date.now()
-                });
-
-                document.getElementById('modalMusica').style.display = 'none';
-                document.getElementById('inputNombreCancion').value = "";
-                document.getElementById('inputUrlCancion').value = "";
-                
-                alert("¡Canción dedicada con éxito! 😍🔗");
-            } catch (error) {
-                alert("Ocurrió un error al guardar en la base de datos.");
-            } finally {
-                btnGuardarCancionReal.innerText = "Dedicar canción... 🚀";
-                btnGuardarCancionReal.disabled = false;
-            }
-        });
-
-        // ACCIONES DE FOTOS
+        // ACCIÓN: GUARDAR FOTOS GRANDES SIN ERROR USANDO STORAGE
         btnGuardar.addEventListener('click', async () => {
             const file = document.getElementById('inputFoto').files[0];
             const titulo = document.getElementById('inputTitulo').value;
             const subtitulo = document.getElementById('inputSubtitulo').value;
 
             if (!titulo || !subtitulo) { alert("Llena los campos de texto ❤️"); return; }
-            btnGuardar.innerText = "Guardar... ⏳";
+            if (!idAventuraEditando && !file) { alert("Por favor selecciona una foto 📸"); return; }
+
+            btnGuardar.innerText = "Guardando... ⏳";
             btnGuardar.disabled = true;
 
             try {
                 let finalFotoUrl = urlFotoActual;
+
+                // Si seleccionó una nueva foto, se sube como archivo real a Firebase Storage
                 if (file) {
-                    const reader = new FileReader();
-                    finalFotoUrl = await new Promise((res) => {
-                        reader.readAsDataURL(file);
-                        reader.onload = () => res(reader.result);
-                    });
+                    const nombreFotoUnico = `foto_${Date.now()}_${file.name}`;
+                    const referenciaFoto = ref(storage, 'fotos/' + nombreFotoUnico);
+                    
+                    const snapshotFoto = await uploadBytes(referenciaFoto, file);
+                    finalFotoUrl = await getDownloadURL(snapshotFoto.ref);
                 }
+
                 if (idAventuraEditando) {
                     await updateDoc(doc(db, "aventuras", idAventuraEditando), { titulo, subtitulo, urlFoto: finalFotoUrl });
                 } else {
                     await addDoc(collection(db, "aventuras"), { titulo, subtitulo, urlFoto: finalFotoUrl, fecha: Date.now() });
                 }
                 document.getElementById('modalAventura').style.display = 'none';
+                alert("¡Aventura guardada perfectamente! Ambos pueden verla ya. 😍");
             } catch (error) {
-                alert("Error al guardar.");
+                console.error(error);
+                alert("Error al guardar la foto. Recuerda activar Storage en la consola de Firebase.");
             } finally {
                 btnGuardar.innerText = "Guardar";
                 btnGuardar.disabled = false;
             }
         });
 
+        // SUBIR AUDIO A STORAGE
+        btnSubirCancionDirecta.addEventListener('click', async () => {
+            const nombre = document.getElementById('inputNombreCancion').value;
+            const archivo = document.getElementById('inputArchivoAudio').files[0];
+
+            if (!nombre) { alert("Introduce el nombre del tema ❤️"); return; }
+            if (!archivo) { alert("Por favor, selecciona un archivo MP3 de tu dispositivo 📂"); return; }
+
+            btnSubirCancionDirecta.innerText = "Subiendo audio... ⏳";
+            btnSubirCancionDirecta.disabled = true;
+
+            try {
+                const nombreArchivoUnico = `musica_${Date.now()}_${archivo.name}`;
+                const referenciaStorage = ref(storage, 'canciones/' + nombreArchivoUnico);
+
+                const snapshotAudio = await uploadBytes(referenciaStorage, archivo);
+                const urlSeguraAudio = await getDownloadURL(snapshotAudio.ref);
+
+                await addDoc(collection(db, "canciones"), {
+                    nombre: nombre,
+                    url: urlSeguraAudio,
+                    fecha: Date.now()
+                });
+
+                document.getElementById('modalMusica').style.display = 'none';
+                document.getElementById('inputNombreCancion').value = "";
+                document.getElementById('inputArchivoAudio').value = "";
+                
+                alert("¡Tu MP3 se subió directamente a tu Firebase y ya está disponible! 😍🎵");
+            } catch (error) {
+                console.error(error);
+                alert("Error al subir el audio.");
+            } finally {
+                btnSubirCancionDirecta.innerText = "Subir canción... 🚀";
+                btnSubirCancionDirecta.disabled = false;
+            }
+        });
+
+        // Carga inicial
         musica.src = "assets/music/canción.mp3";
     </script>
 
