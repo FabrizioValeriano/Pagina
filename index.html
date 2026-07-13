@@ -93,7 +93,6 @@
             font-weight: 500;
         }
 
-        /* Botón de la próxima aventura */
         .btn-aventura {
             width: 100%;
             border: 2px dashed #ffb3b3;
@@ -112,7 +111,7 @@
             transform: scale(1.01);
         }
 
-        /* Ventana flotante (Modal formulario) */
+        /* Ventanas flotantes (Modales) */
         .modal {
             display: none;
             position: fixed;
@@ -148,7 +147,8 @@
             margin-bottom: 5px;
         }
 
-        .modal-content input[type="text"], .modal-content input[type="file"] {
+        .modal-content input[type="text"], 
+        .modal-content input[type="file"] {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
@@ -178,30 +178,28 @@
             color: #aaa;
         }
 
-        /* 🎵 MENÚ DESPLEGABLE DE MÚSICA CORREGIDO 🎵 */
+        /* 🎵 PLAYLIST PLAY/PAUSE INTERACTIVA 🎵 */
         .playlist-menu {
             position: fixed;
             bottom: 90px;
             right: 20px;
-            width: 280px;
+            width: 290px;
             max-height: 350px;
             background: white;
             border-radius: 15px;
             box-shadow: 0 5px 25px rgba(0,0,0,0.15);
             z-index: 1500;
-            display: flex; /* Cambiado a flex de base para que herede la estructura interna */
+            display: flex;
             flex-direction: column;
             overflow: hidden;
             border: 1px solid #ffe3e3;
             
-            /* Usamos visibilidad y opacidad para transiciones más fluidas y seguras */
             opacity: 0;
             visibility: hidden;
             transform: translateY(20px);
             transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
         }
 
-        /* Clase activa que inyectará JavaScript al pulsar el botón */
         .playlist-menu.show {
             opacity: 1;
             visibility: visible;
@@ -225,7 +223,7 @@
             color: white;
             border: none;
             border-radius: 5px;
-            padding: 4px 8px;
+            padding: 6px 10px;
             font-size: 0.75rem;
             cursor: pointer;
             font-weight: bold;
@@ -241,12 +239,20 @@
         .song-item {
             padding: 10px 15px;
             font-size: 0.85rem;
-            cursor: pointer;
             border-bottom: 1px solid #f9f9f9;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 10px;
             transition: background 0.2s;
+        }
+
+        .song-info {
+            flex: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .song-item:hover {
@@ -258,126 +264,128 @@
             color: #ff4757;
             font-weight: bold;
         }
+
+        .btn-play-pause-item {
+            background: #ff6b6b;
+            border: none;
+            color: white;
+            border-radius: 50%;
+            width: 26px;
+            height: 26px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
 
-    <!-- Elemento Reproductor de Audio Dinámico -->
     <audio id="musica-fondo" loop></audio>
 
-    <!-- 🎵 MENÚ DESPLEGABLE DE PLAYLIST 🎵 -->
+    <!-- 🎵 PLAYLIST MENÚ 🎵 -->
     <div class="playlist-menu" id="menuPlaylist">
         <div class="playlist-header">
             <span>Nuestras Canciones ❤️</span>
-            <button class="btn-add-song" id="btnNuevaCancion">+ Añadir canción</button>
+            <!-- Corregido el trigger explícito para abrir el modal de música -->
+            <button class="btn-add-song" id="triggerNuevaCancion">+ Añadir canción</button>
         </div>
         <div class="playlist-items" id="listaCanciones">
-            <!-- Aquí se cargarán las canciones dinámicamente -->
+            <!-- Cargado en tiempo real -->
         </div>
     </div>
 
-    <!-- Botón Flotante de Música principal -->
+    <!-- Botón Flotante Principal -->
     <button id="btn-musica" onclick="togglePlaylist()" style="
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: #ff6b6b;
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 60px;
-        height: 60px;
-        font-size: 1.6rem;
-        cursor: pointer;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: transform 0.2s;
-        -webkit-tap-highlight-color: transparent;
-        -webkit-user-select: none;
-        user-select: none;
+        position: fixed; bottom: 20px; right: 20px;
+        background: #ff6b6b; color: white; border: none;
+        border-radius: 50%; width: 60px; height: 60px; font-size: 1.6rem;
+        cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1000;
+        display: flex; align-items: center; justify-content: center;
+        transition: transform 0.2s; -webkit-tap-highlight-color: transparent;
     ">🎵</button>
 
     <div class="container">
         <h1>Un pequeño detalle... ✨</h1>
         <p class="subtitle">De los mejores días y contando.</p>
 
-        <!-- Contador Automático -->
         <div class="counter-box">
             <h3 id="dias">0</h3>
             <p>Días desde nuestro primer beso.... Y aún no te aburres de mí XD (Mentira mi amor, no me dejes)</p>
         </div>
 
-        <!-- Galería de fotos -->
         <div class="gallery" id="contenedor-galeria">
-            
-            <!-- Fotos Fijas Iniciales -->
             <div class="photo-card">
                 <img src="assets/img/foto1.jpeg" alt="Caminata">
                 <p>📍 Una caminata juntos por la noche.</p>
                 <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">Agarrados de las manos.</p>
             </div>
-
             <div class="photo-card">
                 <img src="assets/img/foto2.jpeg" alt="Comiendo">
                 <p>🍔 Sentados.</p>
                 <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">3 horas decidiendo qué comer.</p>
             </div>
-
             <div class="photo-card">
                 <img src="assets/img/foto3.jpeg" alt="Parque">
                 <p>🌳 Primera salida al parque.</p>
                 <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">No quería dejar de abrazarte ✨</p>
             </div>
-
             <div class="photo-card">
                 <img src="assets/img/foto4.jpeg" alt="Polera">
                 <p>👕 Tú con mi polera.</p>
                 <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">Te queda mil veces mejor que a mí. ❤️</p>
             </div>
-
             <div class="photo-card">
                 <img src="assets/img/foto5.jpeg" alt="Bus">
                 <p>🚌 Viajando en bus juntos.</p>
                 <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">Cualquier viaje es corto si es contigo. 🗺️</p>
             </div>
 
-            <!-- Aquí se insertarán las fotos nuevas de la nube dinámicamente -->
             <div id="fotos-dinamicas"></div>
 
-            <!-- El Recuadro Punteado -->
             <button class="btn-aventura" onclick="abrirModalNuevaAventura()">
                 [ Espacio reservado para nuestra próxima aventura ]
             </button>
         </div>
-
         <p class="footer-note">Hecho con amor y paciencia ❤️.</p>
     </div>
 
-    <!-- Ventana Flotante Formulario Aventuras -->
+    <!-- Formulario Aventuras -->
     <div class="modal" id="modalAventura">
         <div class="modal-content">
             <h3>Nueva Aventura ❤️</h3>
-            
             <label>Selecciona la foto:</label>
             <input type="file" id="inputFoto" accept="image/*">
-
-            <label>Título (Ej: 🍿 Tarde de películas):</label>
+            <label>Título:</label>
             <input type="text" id="inputTitulo" placeholder="¿Qué estaban haciendo?">
-
             <label>Subtítulo o frase corta:</label>
             <input type="text" id="inputSubtitulo" placeholder="Dedícale unas palabras...">
-
             <div class="modal-buttons">
-                <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn-cancel" onclick="cerrarModal('modalAventura')">Cancelar</button>
                 <button class="btn-submit" id="btnGuardar">Guardar</button>
             </div>
         </div>
     </div>
 
-    <!-- ☁️ CONEXIÓN CON FIREBASE DE GOOGLE -->
+    <!-- 🎵 FORMULARIO SUBIR AUDIO REAL DESDE GALERÍA/MÓVIL 🎵 -->
+    <div class="modal" id="modalMusica">
+        <div class="modal-content">
+            <h3>Añadir Canción 🎵</h3>
+            <label>Nombre de la canción y Artista:</label>
+            <input type="text" id="inputNombreCancion" placeholder="Ej: Mi amor amor - Ray Sepúlveda">
+            
+            <label>Selecciona el archivo de música (.mp3):</label>
+            <input type="file" id="inputArchivoMusica" accept="audio/mp3, audio/*">
+
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="cerrarModal('modalMusica')">Cancelar</button>
+                <button class="btn-submit" id="btnGuardarCancion">Subir canción</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ☁️ SCRIPT PRINCIPAL FIREBASE DE GOOGLE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, updateDoc, doc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -395,28 +403,33 @@
         const db = getFirestore(app);
 
         const btnGuardar = document.getElementById('btnGuardar');
+        const btnGuardarCancion = document.getElementById('btnGuardarCancion');
         const fotosDinamicas = document.getElementById('fotos-dinamicas');
         const listaCancionesUI = document.getElementById('listaCanciones');
-        const btnNuevaCancion = document.getElementById('btnNuevaCancion');
         const musica = document.getElementById('musica-fondo');
         const btnMusica = document.getElementById('btn-musica');
+        const triggerNuevaCancion = document.getElementById('triggerNuevaCancion');
 
         let idAventuraEditando = null;
         let urlFotoActual = "";
-        let cancionSeleccionadaId = null;
+        let cancionSeleccionadaId = "base"; 
+        let cacheCanciones = [];
 
-        // 🖼️ CARGAR ADVENTURAS EN TIEMPO REAL
+        // Forzar apertura del modal interactivo local
+        triggerNuevaCancion.addEventListener('click', () => {
+            document.getElementById('modalMusica').style.display = 'flex';
+        });
+
+        // 🖼️ GESTIONAR FOTOS EN TIEMPO REAL
         const qAventuras = query(collection(db, "aventuras"), orderBy("fecha", "asc"));
         onSnapshot(qAventuras, (snapshot) => {
             fotosDinamicas.innerHTML = ""; 
             snapshot.forEach((documento) => {
                 const datos = documento.data();
                 const id = documento.id;
-                
                 const tarjeta = document.createElement('div');
                 tarjeta.className = 'photo-card';
                 tarjeta.style.position = 'relative';
-                
                 tarjeta.innerHTML = `
                     <button class="btn-editar-foto" data-id="${id}" style="
                         position: absolute; top: 15px; right: 15px;
@@ -425,11 +438,10 @@
                         font-size: 0.9rem; display: flex; align-items: center; justify-content: center;
                         box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10;
                     ">✏️</button>
-                    <img src="${datos.urlFoto}" alt="Aventura">
+                    <img src="${datos.urlFoto}">
                     <p>${datos.titulo}</p>
                     <p style="font-size: 0.8rem; color: #888; margin-top: 2px;">${datos.subtitulo}</p>
                 `;
-                
                 tarjeta.querySelector('.btn-editar-foto').addEventListener('click', () => {
                     idAventuraEditando = id;
                     urlFotoActual = datos.urlFoto;
@@ -437,89 +449,68 @@
                     document.getElementById('inputSubtitulo').value = datos.subtitulo;
                     document.getElementById('inputFoto').value = "";
                     document.querySelector('#modalAventura h3').innerText = "Editar Aventura ✏️";
-                    abrirModal();
+                    document.getElementById('modalAventura').style.display = 'flex';
                 });
                 fotosDinamicas.appendChild(tarjeta);
             });
         });
 
-        // 🎵 GESTIONAR PLAYLIST DESDE FIREBASE
+        // 🎵 GESTIONAR PLAYLIST Y DETECTAR ESTADO PLAY/PAUSE
         const qCanciones = query(collection(db, "canciones"), orderBy("fecha", "asc"));
         onSnapshot(qCanciones, (snapshot) => {
-            listaCancionesUI.innerHTML = "";
-            
-            // Canción local base por defecto
-            const cancionBase = { id: "base", nombre: "🎵 Mi amor amor - Ray Sepulveda", url: "assets/music/canción.mp3" };
-            agregarCancionALista(cancionBase);
-
+            cacheCanciones = [{ id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3" }];
             snapshot.forEach((docCancion) => {
-                const datos = docCancion.data();
-                agregarCancionALista({ id: docCancion.id, ...datos });
+                cacheCanciones.push({ id: docCancion.id, ...docCancion.data() });
             });
+            renderizarListaCanciones();
         });
 
-        function agregarCancionALista(song) {
-            const item = document.createElement('div');
-            item.className = 'song-item';
-            if(cancionSeleccionadaId === song.id) item.classList.add('active');
-            
-            item.innerHTML = `▶️ <span>${song.nombre}</span>`;
-            
-            item.addEventListener('click', () => {
-                reproducirEstaCancion(song);
+        function renderizarListaCanciones() {
+            listaCancionesUI.innerHTML = "";
+            cacheCanciones.forEach((song) => {
+                const item = document.createElement('div');
+                item.className = 'song-item';
+                const esActiva = cancionSeleccionadaId === song.id;
+                if(esActiva) item.classList.add('active');
+
+                // Si es la activa y está sonando ponemos pausa, sino play
+                const iconoBoton = (esActiva && !musica.paused) ? "⏸️" : "▶️";
+
+                item.innerHTML = `
+                    <div class="song-info">🎵 <span>${song.nombre}</span></div>
+                    <button class="btn-play-pause-item">${iconoBoton}</button>
+                `;
+
+                // Clic en la info o en el botón controla la reproducción inteligente
+                const controlarAudio = () => {
+                    if (cancionSeleccionadaId !== song.id) {
+                        cancionSeleccionadaId = song.id;
+                        musica.src = song.url;
+                        musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log(e));
+                    } else {
+                        if (musica.paused) {
+                            musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log(e));
+                        } else {
+                            musica.pause();
+                            btnMusica.innerText = "🎵";
+                        }
+                    }
+                    renderizarListaCanciones();
+                };
+
+                item.querySelector('.song-info').addEventListener('click', controlarAudio);
+                item.querySelector('.btn-play-pause-item').addEventListener('click', controlarAudio);
+
+                listaCancionesUI.appendChild(item);
             });
-            listaCancionesUI.appendChild(item);
         }
 
-        function reproducirEstaCancion(song) {
-            cancionSeleccionadaId = song.id;
-            
-            document.querySelectorAll('.song-item').forEach(el => el.classList.remove('active'));
-            
-            musica.src = song.url;
-            musica.play().then(() => {
-                btnMusica.innerText = "❤️";
-                btnMusica.style.transform = "scale(1.1)";
-            }).catch(e => console.log("Espera interacción"));
-            
-            const items = document.querySelectorAll('.song-item');
-            items.forEach(item => {
-                if(item.innerText.includes(song.nombre)) item.classList.add('active');
-            });
-        }
+        // Escuchar cambios de estado del reproductor global para refrescar los botones internos automáticamente
+        musica.addEventListener('play', renderizarListaCanciones);
+        musica.addEventListener('pause', renderizarListaCanciones);
 
-        // AGREGAR CANCIÓN POR URL DE INTERNET (.mp3)
-        btnNuevaCancion.addEventListener('click', async () => {
-            const nombreCan = prompt("Introduce el nombre de la canción:");
-            if (!nombreCan) return;
-            
-            const urlCan = prompt("Pega el enlace directo de tu canción (.mp3):", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3");
-            if (!urlCan) return;
-
-            try {
-                await addDoc(collection(db, "canciones"), {
-                    nombre: nombreCan,
-                    url: urlCan,
-                    fecha: Date.now()
-                });
-                alert("¡Canción agregada a nuestra lista! 🎵✨");
-            } catch (e) {
-                alert("Ocurrió un error guardando tu canción.");
-            }
-        });
-
-        // FUNCIONES DE AVENTURAS REUTILIZADAS
-        window.abrirModalNuevaAventura = function() {
-            idAventuraEditando = null;
-            urlFotoActual = "";
-            document.getElementById('inputTitulo').value = "";
-            document.getElementById('inputSubtitulo').value = "";
-            document.getElementById('inputFoto').value = "";
-            document.querySelector('#modalAventura h3').innerText = "Nueva Aventura ❤️";
-            abrirModal();
-        }
-
-        function transformarImagenATexto(file) {
+        // SUBIDA DE AUDIO REAL BASE64
+        function transformarAudioATexto(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
@@ -528,81 +519,89 @@
             });
         }
 
+        btnGuardarCancion.addEventListener('click', async () => {
+            const file = document.getElementById('inputArchivoMusica').files[0];
+            const nombre = document.getElementById('inputNombreCancion').value;
+
+            if (!nombre) { alert("Introduce el nombre de la canción ❤️"); return; }
+            if (!file) { alert("Selecciona un archivo .mp3 de tu dispositivo 🎵"); return; }
+
+            btnGuardarCancion.innerText = "Subiendo canción... ⏳";
+            btnGuardarCancion.disabled = true;
+
+            try {
+                const finalAudioUrl = await transformarAudioATexto(file);
+                await addDoc(collection(db, "canciones"), { nombre: nombre, url: finalAudioUrl, fecha: Date.now() });
+                alert("¡Canción añadida con éxito! 😍🎵");
+                document.getElementById('modalMusica').style.display = 'none';
+                document.getElementById('inputNombreCancion').value = "";
+                document.getElementById('inputArchivoMusica').value = "";
+            } catch (error) {
+                alert("Error al procesar el archivo de música.");
+            } finally {
+                btnGuardarCancion.innerText = "Subir canción";
+                btnGuardarCancion.disabled = false;
+            }
+        });
+
+        // ACCIONES DE FORMULARIO DE FOTOS
         btnGuardar.addEventListener('click', async () => {
             const file = document.getElementById('inputFoto').files[0];
             const titulo = document.getElementById('inputTitulo').value;
             const subtitulo = document.getElementById('inputSubtitulo').value;
 
-            if (!titulo || !subtitulo) {
-                alert("Por favor, llena los campos de texto ❤️");
-                return;
-            }
-            if (!idAventuraEditando && !file) {
-                alert("Por favor, selecciona una foto para tu nueva aventura 📸");
-                return;
-            }
-
+            if (!titulo || !subtitulo) { alert("Llena los campos de texto ❤️"); return; }
             btnGuardar.innerText = "Guardar... ⏳";
             btnGuardar.disabled = true;
 
             try {
                 let finalFotoUrl = urlFotoActual;
-                if (file) finalFotoUrl = await transformarImagenATexto(file);
-
+                if (file) {
+                    const reader = new FileReader();
+                    finalFotoUrl = await new Promise((res) => {
+                        reader.readAsDataURL(file);
+                        reader.onload = () => res(reader.result);
+                    });
+                }
                 if (idAventuraEditando) {
-                    const aventuraRef = doc(db, "aventuras", idAventuraEditando);
-                    await updateDoc(aventuraRef, { titulo, subtitulo, urlFoto: finalFotoUrl });
-                    alert("¡Aventura actualizada con éxito! ✏️✨");
+                    await updateDoc(doc(db, "aventuras", idAventuraEditando), { titulo, subtitulo, urlFoto: finalFotoUrl });
                 } else {
                     await addDoc(collection(db, "aventuras"), { titulo, subtitulo, urlFoto: finalFotoUrl, fecha: Date.now() });
-                    alert("¡Aventura añadida perfectamente! 😍");
                 }
-                cerrarModal();
+                document.getElementById('modalAventura').style.display = 'none';
             } catch (error) {
-                alert("Hubo un problema al subir los datos.");
+                alert("Error al guardar.");
             } finally {
                 btnGuardar.innerText = "Guardar";
                 btnGuardar.disabled = false;
             }
         });
 
-        // Configuración inicial por defecto
         musica.src = "assets/music/canción.mp3";
     </script>
 
-    <!-- Scripts de interfaz general corregidos -->
     <script>
         const fechaInicio = new Date("2026-05-23T00:00:00");
-
         function actualizarContador() {
             const hoy = new Date();
-            const diferenciaMili = hoy - fechaInicio;
-            const diasPasados = Math.floor(diferenciaMili / (1000 * 60 * 60 * 24));
-            document.getElementById('dias').innerText = diasPasados;
+            document.getElementById('dias').innerText = Math.floor((hoy - fechaInicio) / (1000 * 60 * 60 * 24));
         }
         actualizarContador();
 
-        // NUEVA FUNCIÓN DE DESPLIEGUE SEGURA POR CLASES CSS
         function togglePlaylist() {
             const menu = document.getElementById('menuPlaylist');
-            const btn = document.getElementById('btn-musica');
-            const musica = document.getElementById('musica-fondo');
-
-            // Añade o quita la clase '.show' de CSS para que aparezca fluidamente
             menu.classList.toggle('show');
-
-            // Reproducción rápida en iPhones al interactuar con el menú
-            if (menu.classList.contains('show')) {
-                if (musica.paused && musica.src) {
-                    musica.play().then(() => {
-                        btn.innerText = "❤️";
-                    }).catch(e => console.log("Interacción requerida"));
-                }
-            }
         }
 
-        function abrirModal() { document.getElementById('modalAventura').style.display = 'flex'; }
-        function cerrarModal() { document.getElementById('modalAventura').style.display = 'none'; }
+        function abrirModalNuevaAventura() {
+            document.getElementById('inputTitulo').value = "";
+            document.getElementById('inputSubtitulo').value = "";
+            document.getElementById('inputFoto').value = "";
+            document.querySelector('#modalAventura h3').innerText = "Nueva Aventura ❤️";
+            document.getElementById('modalAventura').style.display = 'flex';
+        }
+
+        function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
     </script>
 </body>
 </html>
