@@ -147,7 +147,14 @@
             margin-bottom: 5px;
         }
 
-        .modal-content input[type="text"], 
+        .modal-content input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
         .modal-content input[type="file"] {
             width: 100%;
             padding: 10px;
@@ -279,7 +286,12 @@
             justify-content: center;
         }
 
-        /* ESTILOS PARA EL MODAL DE NOVEDADES (WHAT'S NEW) */
+        .scroll-novedades {
+            max-height: 280px;
+            overflow-y: auto;
+            padding-right: 5px;
+            margin-top: 10px;
+        }
         .novedad-item {
             margin-bottom: 15px;
             font-size: 0.9rem;
@@ -289,12 +301,6 @@
             color: #ff4757;
             display: block;
             margin-bottom: 2px;
-        }
-        .scroll-novedades {
-            max-height: 280px;
-            overflow-y: auto;
-            padding-right: 5px;
-            margin-top: 10px;
         }
     </style>
 </head>
@@ -385,23 +391,23 @@
         </div>
     </div>
 
-    <!-- FORMULARIO SUBIR AUDIO REAL DESDE GALERÍA/MÓVIL -->
+    <!-- FORMULARIO OPTIMIZADO: ENLACES DIRECTOS (CERO ERROR DE TAMAÑO) -->
     <div class="modal" id="modalMusica">
         <div class="modal-content">
             <h3>Añadir Canción 🎵</h3>
             <label>Nombre de la canción y Artista:</label>
-            <input type="text" id="inputNombreCancion" placeholder="Ej: Mi amor amor - Ray Sepúlveda">
+            <input type="text" id="inputNombreCancion" placeholder="Ej: I'm Yours - Jason Mraz">
             
-            <label>Selecciona el archivo de música (.mp3):</label>
-            <input type="file" id="inputArchivoMusica" accept="audio/mp3, audio/*">
+            <label>Enlace/URL directa del audio (.mp3):</label>
+            <input type="text" id="inputUrlCancion" placeholder="https://ejemplo.com/musica.mp3">
             
-            <p style="font-size: 0.75rem; color: #888; margin-top: 6px; line-height: 1.2;">
-                ⚠️ <strong>Nota:</strong> Debido al límite de almacenamiento gratuito, el archivo debe pesar <strong>menos de 700 KB</strong> (puedes recortar el fragmento que más les guste).
+            <p style="font-size: 0.75rem; color: #666; margin-top: 8px; line-height: 1.3;">
+                💡 <strong>¿Cómo conseguir el enlace?</strong> Puedes usar un convertidor de YouTube a MP3 (como <em>getmp3.pro</em> o similares) que te dé un enlace de descarga, copiar la dirección del enlace y pegarla aquí. ¡Así carga instantáneamente y sin límites de peso!
             </p>
 
             <div class="modal-buttons" style="margin-top: 15px;">
                 <button class="btn-cancel" onclick="cerrarModal('modalMusica')">Cancelar</button>
-                <button class="btn-submit" id="btnGuardarCancion">Subir canción</button>
+                <button class="btn-submit" id="btnGuardarCancion">Añadir canción</button>
             </div>
         </div>
     </div>
@@ -415,27 +421,11 @@
             <div class="scroll-novedades">
                 <div class="novedad-item">
                     <strong>🖼️ Sección "Nuestras Aventuras" Interactiva</strong>
-                    <span>Ya no dependemos de fotos fijas. Al final de la página verás un botón punteado para subir recuerdos nuevos con foto, título y hermosas frases cortas directamente desde tu galería.</span>
+                    <span>Ya no dependemos de fotos fijas. Al final de la página verás un botón punteado para subir recuerdos nuevos con foto.</span>
                 </div>
-                
-                <div class="novedad-item">
-                    <strong>✏️ Botón de Edición Inteligente</strong>
-                    <span>Cada foto subida a la nube ahora cuenta con un botón de lápiz. Si deseas corregir el texto o cambiar la imagen por una mejor, ¡puedes editarla en tiempo real!</span>
-                </div>
-
                 <div class="novedad-item">
                     <strong>🎵 Playlist Interactiva Avanzada</strong>
-                    <span>Al presionar el botón flotante de la música se desplegará nuestra lista oficial, iniciando por nuestro tema principal predeterminado: <em>"Mi amor amor" de Ray Sepúlveda</em>.</span>
-                </div>
-
-                <div class="novedad-item">
-                    <strong>⏸️ Botones de Pausa Inteligentes</strong>
-                    <span>Cada canción incluye controles independientes de reproducción. Si estás escuchando un tema y lo pausas, al volver a darle "Play" **continuará justo donde se quedó** en vez de reiniciarse.</span>
-                </div>
-
-                <div class="novedad-item">
-                    <strong>☁️ Subida Real de Archivos .MP3</strong>
-                    <span>¡Olvídate de copiar molestos enlaces de internet! Con el botón "+ Añadir canción" puedes seleccionar archivos de música guardados en la memoria de tu móvil para expandir nuestra banda sonora.</span>
+                    <span>Al presionar el botón flotante de la música se desplegará nuestra lista oficial, iniciando por nuestro tema principal predeterminado.</span>
                 </div>
             </div>
 
@@ -479,7 +469,7 @@
             document.getElementById('modalMusica').style.display = 'flex';
         });
 
-        // 🖼️ GESTIONAR FOTOS EN TIEMPO REAL
+        // 🖼️ ENLACE DE FOTOS
         const qAventuras = query(collection(db, "aventuras"), orderBy("fecha", "asc"));
         onSnapshot(qAventuras, (snapshot) => {
             fotosDinamicas.innerHTML = ""; 
@@ -514,7 +504,7 @@
             });
         });
 
-        // 🎵 GESTIONAR PLAYLIST
+        // 🎵 ENLACE DE CANCIONES
         const qCanciones = query(collection(db, "canciones"), orderBy("fecha", "asc"));
         onSnapshot(qCanciones, (snapshot) => {
             cacheCanciones = [{ id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3" }];
@@ -565,53 +555,34 @@
         musica.addEventListener('play', renderizarListaCanciones);
         musica.addEventListener('pause', renderizarListaCanciones);
 
-        function transformarAudioATexto(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-            });
-        }
-
-        // CONTROL DE SUBIDA VALIDADO CONTRA TAMAÑO EXCESIVO
+        // NUEVO MÉTODO ULTRA RÁPIDO: AGREGAR POR URL DIRECTA
         btnGuardarCancion.addEventListener('click', async () => {
-            const inputArchivo = document.getElementById('inputArchivoMusica');
-            const file = inputArchivo.files[0];
             const nombre = document.getElementById('inputNombreCancion').value;
+            const urlAudio = document.getElementById('inputUrlCancion').value;
 
             if (!nombre) { alert("Introduce el nombre de la canción ❤️"); return; }
-            if (!file) { alert("Selecciona un archivo .mp3 de tu dispositivo 🎵"); return; }
+            if (!urlAudio) { alert("Introduce el enlace .mp3 de la canción 🎵"); return; }
 
-            // 🌟 VALIDACIÓN DE TAMAÑO MÁXIMO (700 KB para evitar el límite de 1MB en Base64)
-            const limiteBytes = 700 * 1024; 
-            if (file.size > limiteBytes) {
-                alert("❌ El archivo es demasiado pesado para el servidor gratuito.\n\nPor favor, recorta tu parte favorita de la canción usando una web como 'audiotrimmer.com' o comp rímela para que pese menos de 700 KB.");
-                return;
-            }
-
-            btnGuardarCancion.innerText = "Subiendo canción... ⏳";
+            btnGuardarCancion.innerText = "Añadiendo... ⏳";
             btnGuardarCancion.disabled = true;
 
             try {
-                const finalAudioUrl = await transformarAudioATexto(file);
-                await addDoc(collection(db, "canciones"), { nombre: nombre, url: finalAudioUrl, fecha: Date.now() });
+                await addDoc(collection(db, "canciones"), { nombre: nombre, url: urlAudio, fecha: Date.now() });
                 
                 document.getElementById('modalMusica').style.display = 'none';
                 document.getElementById('inputNombreCancion').value = "";
-                try { inputArchivo.value = ""; } catch(e) { } 
+                document.getElementById('inputUrlCancion').value = "";
                 
                 alert("¡Canción añadida con éxito! 😍🎵");
             } catch (error) {
-                alert("Error al guardar en el servidor. Inténtalo de nuevo.");
+                alert("Hubo un problema con la base de datos.");
             } finally {
-                // Restauramos el botón pase lo que pase para que no se quede congelado
-                btnGuardarCancion.innerText = "Subir canción";
+                btnGuardarCancion.innerText = "Añadir canción";
                 btnGuardarCancion.disabled = false;
             }
         });
 
-        // ACCIONES DE FORMULARIO DE FOTOS
+        // ACCIONES DE FOTOS
         btnGuardar.addEventListener('click', async () => {
             const file = document.getElementById('inputFoto').files[0];
             const titulo = document.getElementById('inputTitulo').value;
@@ -670,7 +641,6 @@
 
         function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
 
-        /* CONTROL DE NOVEDADES UNA SOLA VEZ */
         window.addEventListener('DOMContentLoaded', () => {
             const yaVisto = localStorage.getItem('novedades_v2_visto');
             if (!yaVisto) {
