@@ -218,17 +218,6 @@
             align-items: center;
         }
 
-        .btn-add-song {
-            background: #ff6b6b;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            padding: 6px 10px;
-            font-size: 0.75rem;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
         .playlist-items {
             overflow-y: auto;
             flex: 1;
@@ -278,24 +267,6 @@
             align-items: center;
             justify-content: center;
         }
-
-        /* 🆕 ESTILOS PARA EL MODAL DE NOVEDADES (WHAT'S NEW) */
-        .novedad-item {
-            margin-bottom: 15px;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-        .novedad-item strong {
-            color: #ff4757;
-            display: block;
-            margin-bottom: 2px;
-        }
-        .scroll-novedades {
-            max-height: 280px;
-            overflow-y: auto;
-            padding-right: 5px;
-            margin-top: 10px;
-        }
     </style>
 </head>
 <body>
@@ -306,10 +277,9 @@
     <div class="playlist-menu" id="menuPlaylist">
         <div class="playlist-header">
             <span>Nuestras Canciones ❤️</span>
-            <button class="btn-add-song" id="triggerNuevaCancion">+ Añadir canción</button>
         </div>
         <div class="playlist-items" id="listaCanciones">
-            <!-- Cargado en tiempo real -->
+            <!-- Cargado de forma estática -->
         </div>
     </div>
 
@@ -385,66 +355,12 @@
         </div>
     </div>
 
-    <!-- FORMULARIO SUBIR AUDIO REAL DESDE GALERÍA/MÓVIL -->
-    <div class="modal" id="modalMusica">
-        <div class="modal-content">
-            <h3>Añadir Canción 🎵</h3>
-            <label>Nombre de la canción y Artista:</label>
-            <input type="text" id="inputNombreCancion" placeholder="Ej: Mi amor amor - Ray Sepúlveda">
-            
-            <label>Selecciona el archivo de música (.mp3):</label>
-            <input type="file" id="inputArchivoMusica" accept="audio/mp3, audio/*">
-
-            <div class="modal-buttons">
-                <button class="btn-cancel" onclick="cerrarModal('modalMusica')">Cancelar</button>
-                <button class="btn-submit" id="btnGuardarCancion">Subir canción</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 🆕 NUEVO: MODAL FLOTANTE DE NOVEDADES (SOLO APARECE UNA VEZ) -->
-    <div class="modal" id="modalNovedades">
-        <div class="modal-content" style="max-width: 380px;">
-            <h3 style="display: flex; align-items: center; gap: 8px;">✨ ¡Nuevas Actualizaciones! v2.0</h3>
-            <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">Hola mi amor, he mejorado nuestro espacio digital. Aquí tienes los detalles de las nuevas funciones instaladas de hoy:</p>
-            
-            <div class="scroll-novedades">
-                <div class="novedad-item">
-                    <strong>🖼️ Sección "Nuestras Aventuras" Interactiva</strong>
-                    <span>Ya no dependemos de fotos fijas. Al final de la página verás un botón punteado para subir recuerdos nuevos con foto, título y hermosas frases cortas directamente desde tu galería.</span>
-                </div>
-                
-                <div class="novedad-item">
-                    <strong>✏️ Botón de Edición Inteligente</strong>
-                    <span>Cada foto subida a la nube ahora cuenta con un botón de lápiz. Si deseas corregir el texto o cambiar la imagen por una mejor, ¡puedes editarla en tiempo real!</span>
-                </div>
-
-                <div class="novedad-item">
-                    <strong>🎵 Playlist Interactiva Avanzada</strong>
-                    <span>Al presionar el botón flotante de la música se desplegará nuestra lista oficial, iniciando por nuestro tema principal predeterminado: <em>"Mi amor amor" de Ray Sepúlveda</em>.</span>
-                </div>
-
-                <div class="novedad-item">
-                    <strong>⏸️ Botones de Pausa Inteligentes</strong>
-                    <span>Cada canción incluye controles independientes de reproducción. Si estás escuchando un tema y lo pausas, al volver a darle "Play" **continuará justo donde se quedó** en vez de reiniciarse.</span>
-                </div>
-
-                <div class="novedad-item">
-                    <strong>☁️ Subida Real de Archivos .MP3</strong>
-                    <span>¡Olvídate de copiar molestos enlaces de internet! Con el botón "+ Añadir canción" puedes seleccionar archivos de música guardados en la memoria de tu móvil para expandir nuestra banda sonora.</span>
-                </div>
-            </div>
-
-            <div class="modal-buttons" style="margin-top: 15px;">
-                <button class="btn-submit" onclick="aceptarNovedades()" style="width: 100%; flex: none;">¡Entendido, vamos a ver! ❤️</button>
-            </div>
-        </div>
-    </div>
-
     <!-- ☁️ SCRIPT PRINCIPAL FIREBASE DE GOOGLE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, updateDoc, doc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        // REINCORPORADO: Importación crítica de Storage para que carguen tus fotos de Firebase
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCMooruhFE6c3gCOZEUDqcbs_8Lwast0sc",
@@ -457,24 +373,18 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const storage = getStorage(app); // Activado de nuevo
 
         const btnGuardar = document.getElementById('btnGuardar');
-        const btnGuardarCancion = document.getElementById('btnGuardarCancion');
         const fotosDinamicas = document.getElementById('fotos-dinamicas');
         const listaCancionesUI = document.getElementById('listaCanciones');
         const musica = document.getElementById('musica-fondo');
         const btnMusica = document.getElementById('btn-musica');
-        const triggerNuevaCancion = document.getElementById('triggerNuevaCancion');
 
         let idAventuraEditando = null;
         let urlFotoActual = "";
-        let cancionSeleccionadaId = "base"; 
-        let cacheCanciones = [];
-
-        // Forzar apertura del modal interactivo local
-        triggerNuevaCancion.addEventListener('click', () => {
-            document.getElementById('modalMusica').style.display = 'flex';
-        });
+        
+        const miCancionUnica = { id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3" };
 
         // 🖼️ GESTIONAR FOTOS EN TIEMPO REAL
         const qAventuras = query(collection(db, "aventuras"), orderBy("fecha", "asc"));
@@ -511,93 +421,37 @@
             });
         });
 
-        // 🎵 GESTIONAR PLAYLIST Y DETECTAR ESTADO PLAY/PAUSE
-        const qCanciones = query(collection(db, "canciones"), orderBy("fecha", "asc"));
-        onSnapshot(qCanciones, (snapshot) => {
-            cacheCanciones = [{ id: "base", nombre: "Mi amor amor - Ray Sepúlveda", url: "assets/music/canción.mp3" }];
-            snapshot.forEach((docCancion) => {
-                cacheCanciones.push({ id: docCancion.id, ...docCancion.data() });
-            });
-            renderizarListaCanciones();
-        });
-
+        // 🎵 RENDERIZAR CANCIÓN ÚNICA REPRODUCTORA
         function renderizarListaCanciones() {
             listaCancionesUI.innerHTML = "";
-            cacheCanciones.forEach((song) => {
-                const item = document.createElement('div');
-                item.className = 'song-item';
-                const esActiva = cancionSeleccionadaId === song.id;
-                if(esActiva) item.classList.add('active');
+            const item = document.createElement('div');
+            item.className = 'song-item active';
+            const iconoBoton = !musica.paused ? "⏸️" : "▶️";
 
-                const iconoBoton = (esActiva && !musica.paused) ? "⏸️" : "▶️";
+            item.innerHTML = `
+                <div class="song-info">🎵 <span>${miCancionUnica.nombre}</span></div>
+                <button class="btn-play-pause-item">${iconoBoton}</button>
+            `;
 
-                item.innerHTML = `
-                    <div class="song-info">🎵 <span>${song.nombre}</span></div>
-                    <button class="btn-play-pause-item">${iconoBoton}</button>
-                `;
+            const controlarAudio = () => {
+                if (musica.paused) {
+                    musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log(e));
+                } else {
+                    musica.pause();
+                    btnMusica.innerText = "🎵";
+                }
+                renderizarListaCanciones();
+            };
 
-                const controlarAudio = () => {
-                    if (cancionSeleccionadaId !== song.id) {
-                        cancionSeleccionadaId = song.id;
-                        musica.src = song.url;
-                        musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log(e));
-                    } else {
-                        if (musica.paused) {
-                            musica.play().then(() => { btnMusica.innerText = "❤️"; }).catch(e => console.log(e));
-                        } else {
-                            musica.pause();
-                            btnMusica.innerText = "🎵";
-                        }
-                    }
-                    renderizarListaCanciones();
-                };
-
-                item.querySelector('.song-info').addEventListener('click', controlarAudio);
-                item.querySelector('.btn-play-pause-item').addEventListener('click', controlarAudio);
-
-                listaCancionesUI.appendChild(item);
-            });
+            item.querySelector('.song-info').addEventListener('click', controlarAudio);
+            item.querySelector('.btn-play-pause-item').addEventListener('click', controlarAudio);
+            listaCancionesUI.appendChild(item);
         }
 
         musica.addEventListener('play', renderizarListaCanciones);
         musica.addEventListener('pause', renderizarListaCanciones);
 
-        // SUBIDA DE AUDIO REAL BASE64
-        function transformarAudioATexto(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-            });
-        }
-
-        btnGuardarCancion.addEventListener('click', async () => {
-            const file = document.getElementById('inputArchivoMusica').files[0];
-            const nombre = document.getElementById('inputNombreCancion').value;
-
-            if (!nombre) { alert("Introduce el nombre de la canción ❤️"); return; }
-            if (!file) { alert("Selecciona un archivo .mp3 de tu dispositivo 🎵"); return; }
-
-            btnGuardarCancion.innerText = "Subiendo canción... ⏳";
-            btnGuardarCancion.disabled = true;
-
-            try {
-                const finalAudioUrl = await transformarAudioATexto(file);
-                await addDoc(collection(db, "canciones"), { nombre: nombre, url: finalAudioUrl, fecha: Date.now() });
-                alert("¡Canción añadida con éxito! 😍🎵");
-                document.getElementById('modalMusica').style.display = 'none';
-                document.getElementById('inputNombreCancion').value = "";
-                document.getElementById('inputArchivoMusica').value = "";
-            } catch (error) {
-                alert("Error al procesar el archivo de música.");
-            } finally {
-                btnGuardarCancion.innerText = "Subir canción";
-                btnGuardarCancion.disabled = false;
-            }
-        });
-
-        // ACCIONES DE FORMULARIO DE FOTOS
+        // ACCIONES DE FORMULARIO DE FOTOS (Con subida real a Storage si añades fotos nuevas)
         btnGuardar.addEventListener('click', async () => {
             const file = document.getElementById('inputFoto').files[0];
             const titulo = document.getElementById('inputTitulo').value;
@@ -609,13 +463,14 @@
 
             try {
                 let finalFotoUrl = urlFotoActual;
+                
                 if (file) {
-                    const reader = new FileReader();
-                    finalFotoUrl = await new Promise((res) => {
-                        reader.readAsDataURL(file);
-                        reader.onload = () => res(reader.result);
-                    });
+                    const nombreFotoUnico = `foto_${Date.now()}_${file.name}`;
+                    const referenciaFoto = ref(storage, 'fotos/' + nombreFotoUnico);
+                    const snapshotFoto = await uploadBytes(referenciaFoto, file);
+                    finalFotoUrl = await getDownloadURL(snapshotFoto.ref);
                 }
+
                 if (idAventuraEditando) {
                     await updateDoc(doc(db, "aventuras", idAventuraEditando), { titulo, subtitulo, urlFoto: finalFotoUrl });
                 } else {
@@ -623,6 +478,7 @@
                 }
                 document.getElementById('modalAventura').style.display = 'none';
             } catch (error) {
+                console.error(error);
                 alert("Error al guardar.");
             } finally {
                 btnGuardar.innerText = "Guardar";
@@ -630,7 +486,8 @@
             }
         });
 
-        musica.src = "assets/music/canción.mp3";
+        musica.src = miCancionUnica.url;
+        renderizarListaCanciones();
     </script>
 
     <script>
@@ -655,24 +512,6 @@
         }
 
         function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
-
-        /* 🆕 LÓGICA INTELIGENTE DE CONTROL DE NOVEDADES UNA SOLA VEZ */
-        window.addEventListener('DOMContentLoaded', () => {
-            // Buscamos si ya existe el registro de que leyó la actualización 2.0
-            const yaVisto = localStorage.getItem('novedades_v2_visto');
-            
-            if (!yaVisto) {
-                // Si nunca lo ha visto, se lo mostramos inmediatamente al cargar la web
-                document.getElementById('modalNovedades').style.display = 'flex';
-            }
-        });
-
-        function aceptarNovedades() {
-            // Guardamos la marca permanente en el navegador actual
-            localStorage.setItem('novedades_v2_visto', 'true');
-            // Cerramos la ventana
-            cerrarModal('modalNovedades');
-        }
     </script>
 </body>
 </html>
