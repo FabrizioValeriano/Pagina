@@ -178,9 +178,8 @@
             color: #aaa;
         }
 
-        /* 🎵 NUEVOS ESTILOS DEL MENÚ DESPLEGABLE DE MÚSICA 🎵 */
+        /* 🎵 MENÚ DESPLEGABLE DE MÚSICA CORREGIDO 🎵 */
         .playlist-menu {
-            display: none;
             position: fixed;
             bottom: 90px;
             right: 20px;
@@ -190,15 +189,23 @@
             border-radius: 15px;
             box-shadow: 0 5px 25px rgba(0,0,0,0.15);
             z-index: 1500;
+            display: flex; /* Cambiado a flex de base para que herede la estructura interna */
             flex-direction: column;
             overflow: hidden;
             border: 1px solid #ffe3e3;
-            animation: desplegarHaciaArriba 0.3s ease-out;
+            
+            /* Usamos visibilidad y opacidad para transiciones más fluidas y seguras */
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
         }
 
-        @keyframes desplegarHaciaArriba {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+        /* Clase activa que inyectará JavaScript al pulsar el botón */
+        .playlist-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
         }
 
         .playlist-header {
@@ -255,7 +262,7 @@
 </head>
 <body>
 
-    <!-- Elemento Reproductor de Audio Dinámico (Su fuente cambiará por código) -->
+    <!-- Elemento Reproductor de Audio Dinámico -->
     <audio id="musica-fondo" loop></audio>
 
     <!-- 🎵 MENÚ DESPLEGABLE DE PLAYLIST 🎵 -->
@@ -436,13 +443,13 @@
             });
         });
 
-        // 🎵 CARGAR Y GESTIONAR CANCIONES DESDE FIREBASE
+        // 🎵 GESTIONAR PLAYLIST DESDE FIREBASE
         const qCanciones = query(collection(db, "canciones"), orderBy("fecha", "asc"));
         onSnapshot(qCanciones, (snapshot) => {
             listaCancionesUI.innerHTML = "";
             
-            // Canción local base por si no tienen internet o es la primera
-            const cancionBase = { id: "base", nombre: "🎵 Canción Inicial de Fondo", url: "assets/music/canción.mp3" };
+            // Canción local base por defecto
+            const cancionBase = { id: "base", nombre: "🎵 Mi amor amor - Ray Sepulveda", url: "assets/music/canción.mp3" };
             agregarCancionALista(cancionBase);
 
             snapshot.forEach((docCancion) => {
@@ -467,24 +474,21 @@
         function reproducirEstaCancion(song) {
             cancionSeleccionadaId = song.id;
             
-            // Marcar elemento visualmente activo
             document.querySelectorAll('.song-item').forEach(el => el.classList.remove('active'));
             
-            // Cambiar archivo de música
             musica.src = song.url;
             musica.play().then(() => {
                 btnMusica.innerText = "❤️";
                 btnMusica.style.transform = "scale(1.1)";
             }).catch(e => console.log("Espera interacción"));
             
-            // refrescar lista para marcar activo
             const items = document.querySelectorAll('.song-item');
             items.forEach(item => {
                 if(item.innerText.includes(song.nombre)) item.classList.add('active');
             });
         }
 
-        // AGREGAR NUEVA CANCIÓN POR URL
+        // AGREGAR CANCIÓN POR URL DE INTERNET (.mp3)
         btnNuevaCancion.addEventListener('click', async () => {
             const nombreCan = prompt("Introduce el nombre de la canción:");
             if (!nombreCan) return;
@@ -504,7 +508,7 @@
             }
         });
 
-        // FUNCIONES DE GUARDADO DE AVENTURAS (IGUALES)
+        // FUNCIONES DE AVENTURAS REUTILIZADAS
         window.abrirModalNuevaAventura = function() {
             idAventuraEditando = null;
             urlFotoActual = "";
@@ -562,11 +566,11 @@
             }
         });
 
-        // Configuración inicial de la canción base por defecto al cargar la web
+        // Configuración inicial por defecto
         musica.src = "assets/music/canción.mp3";
     </script>
 
-    <!-- Scripts de interfaz general -->
+    <!-- Scripts de interfaz general corregidos -->
     <script>
         const fechaInicio = new Date("2026-05-23T00:00:00");
 
@@ -578,21 +582,21 @@
         }
         actualizarContador();
 
-        // Desplegar menú de la Playlist
+        // NUEVA FUNCIÓN DE DESPLIEGUE SEGURA POR CLASES CSS
         function togglePlaylist() {
             const menu = document.getElementById('menuPlaylist');
             const btn = document.getElementById('btn-musica');
             const musica = document.getElementById('musica-fondo');
 
-            if (menu.style.display === 'flex') {
-                menu.style.display = 'none';
-            } else {
-                menu.style.display = 'flex';
-                // Intento automático de play para iPhone al abrirlo la primera vez
+            // Añade o quita la clase '.show' de CSS para que aparezca fluidamente
+            menu.classList.toggle('show');
+
+            // Reproducción rápida en iPhones al interactuar con el menú
+            if (menu.classList.contains('show')) {
                 if (musica.paused && musica.src) {
                     musica.play().then(() => {
                         btn.innerText = "❤️";
-                    }).catch(e => console.log("Pide toque"));
+                    }).catch(e => console.log("Interacción requerida"));
                 }
             }
         }
